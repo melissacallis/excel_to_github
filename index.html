@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Client Status Board</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --ink:#16241f;
+    --paper:#eef1ea;
+    --card:#ffffff;
+    --line:#c7d0c4;
+    --pine:#2f4d3e;
+    --pine-dim:#4a6b58;
+    --amber:#c17f2a;
+    --amber-soft:#f4e3c4;
+    --rust:#a8452f;
+    --rust-soft:#f3ded8;
+    --sky:#2f5f74;
+    --sky-soft:#dcebef;
+    --mono: 'IBM Plex Mono', 'SFMono-Regular', Menlo, Consolas, monospace;
+    --serif: 'Fraunces', 'Iowan Old Style', Georgia, serif;
+  }
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px);
+    background-size: 100% 42px;
+    color:var(--ink);
+    font-family:var(--mono);
+    -webkit-font-smoothing:antialiased;
+  }
+
+  header{
+    padding:36px 32px 20px;
+    border-bottom:2px solid var(--ink);
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    flex-wrap:wrap;
+    gap:16px;
+  }
+  .kicker{
+    font-size:11px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--pine-dim);
+    margin:0 0 6px;
+  }
+  h1{
+    font-family:var(--serif);
+    font-weight:600;
+    font-size:clamp(28px,4vw,42px);
+    margin:0;
+    letter-spacing:-0.01em;
+  }
+  .clipboard{
+    font-size:11px;
+    color:var(--pine-dim);
+    text-align:right;
+    line-height:1.6;
+  }
+  #asof{color:var(--ink); font-weight:600;}
+
+  .stats{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+    gap:1px;
+    background:var(--ink);
+    border-bottom:2px solid var(--ink);
+  }
+  .stat{
+    background:var(--paper);
+    padding:16px 20px;
+  }
+  .stat .n{
+    font-family:var(--serif);
+    font-size:30px;
+    font-weight:700;
+    display:block;
+    color:var(--pine);
+  }
+  .stat .l{
+    font-size:10px;
+    text-transform:uppercase;
+    letter-spacing:.1em;
+    color:var(--pine-dim);
+  }
+
+  .toolbar{
+    padding:18px 32px;
+    display:flex;
+    gap:12px;
+    flex-wrap:wrap;
+    align-items:center;
+  }
+  .toolbar input, .toolbar select{
+    font-family:var(--mono);
+    font-size:13px;
+    padding:9px 12px;
+    border:1.5px solid var(--ink);
+    background:var(--card);
+    color:var(--ink);
+    border-radius:2px;
+  }
+  .toolbar input{flex:1; min-width:180px;}
+  .toolbar label{font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--pine-dim); margin-right:-6px;}
+
+  main{padding:0 32px 60px;}
+
+  #status{padding:40px 0; color:var(--pine-dim); font-size:13px;}
+
+  .board{
+    border:1.5px solid var(--ink);
+    background:var(--card);
+    overflow-x:auto;
+  }
+  table{
+    border-collapse:collapse;
+    width:100%;
+    min-width:960px;
+  }
+  thead th{
+    text-align:left;
+    font-size:10px;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:var(--paper);
+    background:var(--ink);
+    padding:11px 14px;
+    position:sticky;
+    top:0;
+    white-space:nowrap;
+  }
+  tbody td{
+    padding:13px 14px;
+    border-top:1px solid var(--line);
+    font-size:12.5px;
+    vertical-align:top;
+    white-space:nowrap;
+  }
+  tbody td.notes{white-space:normal; min-width:180px;}
+  tbody tr:hover{background:#f7f8f4;}
+
+  .initials{
+    font-family:var(--serif);
+    font-weight:700;
+    font-size:15px;
+    color:var(--ink);
+  }
+  .id-tag{
+    display:inline-block;
+    font-size:10.5px;
+    color:var(--pine-dim);
+    letter-spacing:.03em;
+  }
+
+  .badge{
+    display:inline-block;
+    padding:3px 9px;
+    border-radius:2px;
+    font-size:10.5px;
+    font-weight:600;
+    text-transform:uppercase;
+    letter-spacing:.03em;
+    border:1px solid transparent;
+    white-space:nowrap;
+  }
+  .b-pending{ background:var(--amber-soft); color:#7a5416; border-color:#d9b06b;}
+  .b-confirmed, .b-submitted, .b-complete{ background:#dbe8dc; color:var(--pine); border-color:#9cb99f;}
+  .b-none, .b-unknown{ background:var(--rust-soft); color:#7a2f1c; border-color:#d59b8a;}
+  .b-default{ background:var(--sky-soft); color:var(--sky); border-color:#a9c7d1;}
+
+  footer{
+    padding:20px 32px 40px;
+    font-size:11px;
+    color:var(--pine-dim);
+  }
+  footer a{color:var(--pine);}
+
+  ::selection{background:var(--amber-soft);}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <p class="kicker">Program Operations</p>
+    <h1>Client Status Board</h1>
+  </div>
+  <div class="clipboard">
+    Live from workbook · <span id="asof">loading…</span><br>
+    ID + initials only — no client names displayed
+  </div>
+</header>
+
+<div class="stats" id="stats"></div>
+
+<div class="toolbar">
+  <input id="search" type="text" placeholder="Search by ID, initials, case manager, bed…">
+  <label>Appt status</label>
+  <select id="filterAppt"><option value="">All</option></select>
+  <label>Pharmacy</label>
+  <select id="filterPharm"><option value="">All</option></select>
+</div>
+
+<main>
+  <p id="status">Loading Client Status Board…</p>
+  <div class="board" id="boardWrap" style="display:none;">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Initials</th>
+          <th>Bed</th>
+          <th>LOC</th>
+          <th>Case Manager</th>
+          <th>Referral</th>
+          <th>Doctor</th>
+          <th>Appt Status</th>
+          <th>Appt Date/Time</th>
+          <th>Pharmacy</th>
+          <th>Pharmacy Status</th>
+          <th>Med Times</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+</main>
+
+<footer>
+  Source: Client Status Board sheet, fetched directly from the workbook in this repository. Client names are excluded by design — only Member ID and initials are shown.
+</footer>
+
+<script>
+// ⚠️ Replace with your actual raw GitHub file URL
+const fileUrl = 'https://raw.githubusercontent.com/melissacallis/REPO/main/Client_Needs_Tracker_Final(1).xlsx';
+const SHEET_NAME = 'Client Status Board';
+
+let allRows = [];
+
+function badgeClass(val){
+  if(!val) return 'b-default';
+  const v = String(val).toLowerCase();
+  if(v.includes('pending')) return 'b-pending';
+  if(v.includes('submit') || v.includes('confirm') || v.includes('complete')) return 'b-confirmed';
+  if(v.includes('unknown') || v === '-' || v.includes('none')) return 'b-none';
+  return 'b-default';
+}
+
+function fmtDate(v){
+  if(!v) return '—';
+  if(v instanceof Date) return v.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  return v;
+}
+function fmtTime(v){
+  if(!v) return '';
+  if(v instanceof Date) return v.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+  return v;
+}
+
+function render(rows){
+  const tbody = document.getElementById('rows');
+  tbody.innerHTML = '';
+  rows.forEach(r=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><span class="id-tag">${r['Member ID'] ?? ''}</span></td>
+      <td><span class="initials">${r['Client Initials'] ?? '—'}</span></td>
+      <td>${r['Bed'] ?? '—'}</td>
+      <td>${r['LOC'] ?? '—'}</td>
+      <td>${r['Case Manager'] ?? '—'}</td>
+      <td>${r['Referral source'] ?? '—'}</td>
+      <td>${r['Doctor'] ?? '—'}</td>
+      <td><span class="badge ${badgeClass(r['Appointment Status'])}">${r['Appointment Status'] ?? '—'}</span></td>
+      <td>${fmtDate(r['Appointment Date'])} ${fmtTime(r['Appointment Time'])}</td>
+      <td>${r['Pharmacy'] ?? '—'}</td>
+      <td><span class="badge ${badgeClass(r['Pharmacy Status'])}">${r['Pharmacy Status'] ?? '—'}</span></td>
+      <td>${r['Med Times'] ?? '—'}</td>
+      <td class="notes">${r['Notes'] ?? ''}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function populateFilters(rows){
+  const apptSel = document.getElementById('filterAppt');
+  const pharmSel = document.getElementById('filterPharm');
+  const appts = [...new Set(rows.map(r=>r['Appointment Status']).filter(Boolean))];
+  const pharms = [...new Set(rows.map(r=>r['Pharmacy Status']).filter(Boolean))];
+  appts.forEach(v=>{
+    const o = document.createElement('option'); o.value=v; o.textContent=v;
+    apptSel.appendChild(o);
+  });
+  pharms.forEach(v=>{
+    const o = document.createElement('option'); o.value=v; o.textContent=v;
+    pharmSel.appendChild(o);
+  });
+}
+
+function renderStats(rows){
+  const total = rows.length;
+  const pendingAppt = rows.filter(r=>String(r['Appointment Status']||'').toLowerCase().includes('pending')).length;
+  const pendingRx = rows.filter(r=>String(r['Pharmacy Status']||'').toLowerCase().includes('pending')).length;
+  const locs = new Set(rows.map(r=>r['LOC']).filter(Boolean)).size;
+  document.getElementById('stats').innerHTML = `
+    <div class="stat"><span class="n">${total}</span><span class="l">Clients on board</span></div>
+    <div class="stat"><span class="n">${pendingAppt}</span><span class="l">Appt requested/pending</span></div>
+    <div class="stat"><span class="n">${pendingRx}</span><span class="l">Rx submitted/pending</span></div>
+    <div class="stat"><span class="n">${locs}</span><span class="l">Levels of care active</span></div>
+  `;
+}
+
+function applyFilters(){
+  const q = document.getElementById('search').value.toLowerCase();
+  const appt = document.getElementById('filterAppt').value;
+  const pharm = document.getElementById('filterPharm').value;
+  let rows = allRows.filter(r=>{
+    const hay = [r['Member ID'],r['Client Initials'],r['Case Manager'],r['Bed'],r['Doctor'],r['Referral source']]
+      .join(' ').toLowerCase();
+    if(q && !hay.includes(q)) return false;
+    if(appt && r['Appointment Status'] !== appt) return false;
+    if(pharm && r['Pharmacy Status'] !== pharm) return false;
+    return true;
+  });
+  render(rows);
+}
+
+document.getElementById('search').addEventListener('input', applyFilters);
+document.getElementById('filterAppt').addEventListener('change', applyFilters);
+document.getElementById('filterPharm').addEventListener('change', applyFilters);
+
+fetch(fileUrl)
+  .then(res=>{
+    if(!res.ok) throw new Error('File not found: '+res.status);
+    return res.arrayBuffer();
+  })
+  .then(data=>{
+    const wb = XLSX.read(data, {type:'array', cellDates:true});
+    const sheet = wb.Sheets[SHEET_NAME];
+    if(!sheet) throw new Error(`Sheet "${SHEET_NAME}" not found`);
+    // header row is row 4 in the sheet (0-indexed row 3)
+    const json = XLSX.utils.sheet_to_json(sheet, {range:3, defval:null});
+    allRows = json.filter(r => r['Member ID']); // drop blank rows
+
+    document.getElementById('asof').textContent = new Date().toLocaleString('en-US',{
+      month:'short', day:'numeric', hour:'numeric', minute:'2-digit'
+    });
+    document.getElementById('status').style.display='none';
+    document.getElementById('boardWrap').style.display='block';
+
+    populateFilters(allRows);
+    renderStats(allRows);
+    render(allRows);
+  })
+  .catch(err=>{
+    document.getElementById('status').textContent = 'Error loading board: ' + err.message;
+    console.error(err);
+  });
+</script>
+
+</body>
+</html>
