@@ -183,6 +183,18 @@
   }
   footer a{color:var(--pine);}
 
+  .live-dot{
+    display:inline-block;
+    width:8px; height:8px;
+    border-radius:50%;
+    margin-right:6px;
+    vertical-align:middle;
+  }
+  .live-ok{ background:var(--pine); box-shadow:0 0 0 3px rgba(47,77,62,0.15); }
+  .live-loading{ background:var(--amber); animation:pulse 1s infinite; }
+  .live-error{ background:var(--rust); }
+  @keyframes pulse{ 0%,100%{opacity:1;} 50%{opacity:.35;} }
+
   ::selection{background:var(--amber-soft);}
 </style>
 </head>
@@ -194,8 +206,8 @@
     <h1>Client Status Board</h1>
   </div>
   <div class="clipboard">
-    Live from workbook · <span id="asof">loading…</span><br>
-    ID + initials only — no client names displayed
+    <span class="live-dot live-loading" id="liveDot"></span>Live from workbook · <span id="asof">loading…</span><br>
+    ID + initials only — no client names displayed · refreshes every 60s
   </div>
 </header>
 
@@ -292,6 +304,12 @@ function render(rows){
 function populateFilters(rows){
   const apptSel = document.getElementById('filterAppt');
   const pharmSel = document.getElementById('filterPharm');
+  const prevAppt = apptSel.value;
+  const prevPharm = pharmSel.value;
+
+  apptSel.innerHTML = '<option value="">All</option>';
+  pharmSel.innerHTML = '<option value="">All</option>';
+
   const appts = [...new Set(rows.map(r=>r['Appointment Status']).filter(Boolean))];
   const pharms = [...new Set(rows.map(r=>r['Pharmacy Status']).filter(Boolean))];
   appts.forEach(v=>{
@@ -302,6 +320,10 @@ function populateFilters(rows){
     const o = document.createElement('option'); o.value=v; o.textContent=v;
     pharmSel.appendChild(o);
   });
+
+  // restore previous selection if it still exists
+  if([...apptSel.options].some(o=>o.value===prevAppt)) apptSel.value = prevAppt;
+  if([...pharmSel.options].some(o=>o.value===prevPharm)) pharmSel.value = prevPharm;
 }
 
 function renderStats(rows){
@@ -336,33 +358,67 @@ document.getElementById('search').addEventListener('input', applyFilters);
 document.getElementById('filterAppt').addEventListener('change', applyFilters);
 document.getElementById('filterPharm').addEventListener('change', applyFilters);
 
-fetch(fileUrl)
-  .then(res=>{
-    if(!res.ok) throw new Error('File not found: '+res.status);
-    return res.arrayBuffer();
-  })
-  .then(data=>{
-    const wb = XLSX.read(data, {type:'array', cellDates:true});
-    const sheet = wb.Sheets[SHEET_NAME];
-    if(!sheet) throw new Error(`Sheet "${SHEET_NAME}" not found`);
-    // header row is row 4 in the sheet (0-indexed row 3)
-    const json = XLSX.utils.sheet_to_json(sheet, {range:3, defval:null});
-    allRows = json.filter(r => r['Member ID']); // drop blank rows
+const REFRESH_SECONDS = 60; // how often to re-pull the data
+let refreshTimer = null;
 
-    document.getElementById('asof').textContent = new Date().toLocaleString('en-US',{
-      month:'short', day:'numeric', hour:'numeric', minute:'2-digit'
+function setLiveDot(state){
+  const el = document.getElementById('liveDot');
+  if(!el) return;
+  el.className = 'live-dot live-' + state;
+}
+
+function loadData(isBackground){
+  setLiveDot('loading');
+  // cache-bust: raw.githubusercontent.com CDN-caches for ~5 min otherwise
+  const bustUrl = fileUrl + (fileUrl.includes('?') ? '&' : '?') + 't=' + Date.now();
+
+  return fetch(bustUrl, {cache:'no-store'})
+    .then(res=>{
+      if(!res.ok) throw new Error('File not found: '+res.status);
+      return res.arrayBuffer();
+    })
+    .then(data=>{
+      const wb = XLSX.read(data, {type:'array', cellDates:true});
+      const sheet = wb.Sheets[SHEET_NAME];
+      if(!sheet) throw new Error(`Sheet "${SHEET_NAME}" not found`);
+      const json = XLSX.utils.sheet_to_json(sheet, {range:3, defval:null});
+      allRows = json.filter(r => r['Member ID']);
+
+      document.getElementById('asof').textContent = new Date().toLocaleString('en-US',{
+        month:'short', day:'numeric', hour:'numeric', minute:'2-digit', second:'2-digit'
+      });
+      document.getElementById('status').style.display='none';
+      document.getElementById('boardWrap').style.display='block';
+
+      populateFilters(allRows);
+      renderStats(allRows);
+      applyFilters();
+      setLiveDot('ok');
+    })
+    .catch(err=>{
+      setLiveDot('error');
+      if(!isBackground){
+        document.getElementById('status').textContent = 'Error loading board: ' + err.message;
+      }
+      console.error(err);
     });
-    document.getElementById('status').style.display='none';
-    document.getElementById('boardWrap').style.display='block';
+}
 
-    populateFilters(allRows);
-    renderStats(allRows);
-    render(allRows);
-  })
-  .catch(err=>{
-    document.getElementById('status').textContent = 'Error loading board: ' + err.message;
-    console.error(err);
-  });
+function startAutoRefresh(){
+  if(refreshTimer) clearInterval(refreshTimer);
+  refreshTimer = setInterval(()=>loadData(true), REFRESH_SECONDS * 1000);
+}
+
+document.addEventListener('visibilitychange', ()=>{
+  if(document.hidden){
+    if(refreshTimer) clearInterval(refreshTimer);
+  } else {
+    loadData(true);
+    startAutoRefresh();
+  }
+});
+
+loadData(false).then(startAutoRefresh);
 </script>
 
 </body>
