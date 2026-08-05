@@ -3,422 +3,651 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Client Status Board</title>
+<title>Respite Program &middot; Client Status Board</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
-  :root{
-    --ink:#16241f;
-    --paper:#eef1ea;
-    --card:#ffffff;
-    --line:#c7d0c4;
-    --pine:#2f4d3e;
-    --pine-dim:#4a6b58;
-    --amber:#c17f2a;
-    --amber-soft:#f4e3c4;
-    --rust:#a8452f;
-    --rust-soft:#f3ded8;
-    --sky:#2f5f74;
-    --sky-soft:#dcebef;
-    --mono: 'IBM Plex Mono', 'SFMono-Regular', Menlo, Consolas, monospace;
-    --serif: 'Fraunces', 'Iowan Old Style', Georgia, serif;
+  :root {
+    --ink: #1c2b29;
+    --slate: #48605c;
+    --muted: #7c8d8a;
+    --line: #dfe6e2;
+    --paper: #f2f6f4;
+    --card: #ffffff;
+    --teal-deep: #0d3d33;
+    --teal: #12735c;
+    --teal-light: #e2f2ec;
+    --sage: #9ec2b3;
+    --male-bg: #dceaf6;
+    --male-fg: #2c5f8a;
+    --female-bg: #e7ddf5;
+    --female-fg: #5e3a96;
+    --red: #a32d2d;
+    --red-bg: #fbe9e9;
+    --amber: #8a5a0b;
+    --amber-bg: #fdf1de;
+    --green: #276a2f;
+    --green-bg: #e9f3e8;
+    --doctor-bg: #dbe9fb;
+    --doctor-fg: #1f4f8f;
+    --casemgr-bg: #ece1f9;
+    --casemgr-fg: #5a2f96;
+    --other-bg: #fdeadb;
+    --other-fg: #935a15;
+    --shadow: 0 1px 2px rgba(20,40,35,0.06), 0 4px 14px rgba(20,40,35,0.05);
   }
-  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Inter", "Segoe UI", -apple-system, Helvetica, Arial, sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+  }
+  header {
+    background: linear-gradient(135deg, var(--teal-deep), var(--teal));
+    color: #fff;
+    padding: 22px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 14px;
+    box-shadow: var(--shadow);
+  }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .brand-mark {
+    width: 38px; height: 38px; border-radius: 10px;
+    background: rgba(255,255,255,0.16);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .brand-mark svg { width: 20px; height: 20px; }
+  .brand-text h1 { font-size: 18px; font-weight: 600; margin: 0; letter-spacing: 0.2px; }
+  .brand-text .sub { font-size: 11.5px; color: rgba(255,255,255,0.72); margin-top: 1px; }
+  header .meta { font-size: 12px; color: rgba(255,255,255,0.78); font-variant-numeric: tabular-nums; }
+  .header-right { display: flex; align-items: center; gap: 14px; }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #6fd3a0; display: inline-block; margin-right: 6px; }
+  button.icon-btn {
+    background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3);
+    color: #fff; border-radius: 7px; padding: 7px 14px; font-size: 12.5px; cursor: pointer;
+  }
+  button.icon-btn:hover { background: rgba(255,255,255,0.2); }
 
-  *{box-sizing:border-box;}
-  body{
-    margin:0;
-    background:var(--paper);
-    background-image:
-      linear-gradient(var(--line) 1px, transparent 1px);
-    background-size: 100% 42px;
-    color:var(--ink);
-    font-family:var(--mono);
-    -webkit-font-smoothing:antialiased;
+  main { max-width: 1080px; margin: 0 auto; padding: 26px 20px 60px; }
+
+  #config-screen {
+    max-width: 480px; margin: 60px auto; background: var(--card);
+    border: 1px solid var(--line); border-radius: 14px; padding: 32px; box-shadow: var(--shadow);
+  }
+  #config-screen h2 { font-size: 16px; margin: 0 0 8px; color: var(--teal-deep); }
+  #config-screen p { font-size: 13px; color: var(--muted); line-height: 1.5; margin: 0 0 20px; }
+  #config-screen label { font-size: 12px; font-weight: 600; color: var(--slate); display: block; margin-bottom: 6px; }
+  #config-screen input {
+    width: 100%; padding: 10px 12px; font-size: 13px;
+    border: 1px solid var(--line); border-radius: 8px; margin-bottom: 16px;
+  }
+  #config-screen button {
+    background: var(--teal); color: #fff; border: none; border-radius: 8px;
+    padding: 11px 18px; font-size: 13px; font-weight: 600; cursor: pointer; width: 100%;
+  }
+  #config-error { color: var(--red); font-size: 12px; margin-top: 10px; display: none; }
+
+  .summary-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 22px; }
+  .summary-card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+    padding: 16px 18px; box-shadow: var(--shadow);
+  }
+  .summary-card .num { font-size: 27px; font-weight: 700; line-height: 1; }
+  .summary-card .lbl { font-size: 11px; color: var(--muted); margin-top: 7px; letter-spacing: 0.3px; text-transform: uppercase; }
+  .summary-card.red .num { color: var(--red); }
+  .summary-card.amber .num { color: var(--amber); }
+  .summary-card.green .num { color: var(--green); }
+  .summary-card.teal .num { color: var(--teal-deep); }
+
+  .filter-row { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; align-items: center; }
+  .filter-btn {
+    border: 1px solid var(--line); background: var(--card); border-radius: 20px;
+    padding: 7px 15px; font-size: 12.5px; cursor: pointer; color: var(--slate);
+  }
+  .filter-btn.active { background: var(--teal-deep); color: #fff; border-color: var(--teal-deep); }
+
+  .legend { display: flex; gap: 16px; margin-left: auto; align-items: center; font-size: 11.5px; color: var(--muted); }
+  .legend-dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; margin-right: 5px; vertical-align: -1px; }
+
+  .board-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .board-column-header {
+    display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700;
+    color: var(--slate); text-transform: uppercase; letter-spacing: 0.4px;
+    margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid var(--line);
+  }
+  .board-column-header .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .board-column-header.male .dot { background: var(--male-fg); }
+  .board-column-header.female .dot { background: var(--female-fg); }
+
+  .client-list { display: flex; flex-direction: column; gap: 7px; }
+
+  .client-card.empty-bed { opacity: 0.55; justify-content: center; grid-template-columns: 44px 1fr; }
+  .client-card.empty-bed .field-value { color: var(--muted); font-style: italic; }
+
+  .client-card {
+    background: var(--card); border: 1px solid var(--line); border-left: 6px solid var(--line);
+    border-radius: 9px; padding: 9px 14px; display: grid;
+    grid-template-columns: 40px 1.3fr 1.3fr 1.3fr 1fr; gap: 10px; align-items: start; box-shadow: var(--shadow);
+  }
+  .client-card.gender-male { border-left-color: #8f74c9; }
+  .client-card.gender-female { border-left-color: #e0952f; }
+  .client-card.gender-unknown { border-left-color: var(--line); }
+
+  @keyframes med-flash {
+    0%, 100% { box-shadow: var(--shadow); }
+    50% { box-shadow: 0 0 0 3px rgba(226,59,59,0.35), var(--shadow); }
+  }
+  .client-card.med-due { animation: med-flash 1s ease-in-out infinite; }
+
+  .avatar {
+    width: 36px; height: 36px; border-radius: 50%; display: flex;
+    align-items: center; justify-content: center; font-weight: 700; font-size: 12px;
+  }
+  .avatar-col { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .avatar.male { background: var(--male-bg); color: var(--male-fg); }
+  .avatar.female { background: var(--female-bg); color: var(--female-fg); }
+  .avatar.unknown { background: var(--teal-light); color: var(--teal); }
+
+  .field-label { font-size: 9.5px; color: var(--teal); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; font-weight: 700; padding-bottom: 4px; border-bottom: 1.5px solid var(--teal-light); }
+
+  .client-card .cell { border-left: 1px solid var(--line); padding-left: 12px; align-self: stretch; }
+  .appt-group { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0 2px; }
+  .field-value { font-size: 14px; color: var(--ink); font-weight: 600; letter-spacing: -0.1px; }
+  .field-value.big { font-size: 16px; font-weight: 800; margin-bottom: 5px; }
+  .field-sub { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+
+  .data-line { display: flex; align-items: baseline; gap: 6px; font-size: 11.5px; margin-top: 3px; line-height: 1.4; }
+  .data-line .k {
+    font-family: "IBM Plex Mono", monospace; font-size: 9px; font-weight: 600; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.5px; min-width: 30px; flex-shrink: 0;
+  }
+  .data-line .v { color: var(--ink); font-weight: 500; }
+  .data-line .v.time-missing { color: var(--red); font-weight: 700; }
+
+  .badge { display: inline-block; font-size: 11px; font-weight: 700; padding: 4px 11px; border-radius: 20px; white-space: nowrap; }
+  .badge.red { background: var(--red-bg); color: var(--red); }
+  .badge.amber { background: var(--amber-bg); color: var(--amber); }
+  .badge.green { background: var(--green-bg); color: var(--green); }
+  .badge.muted { background: #eef1f0; color: var(--muted); }
+
+  .flags { margin-top: 6px; }
+
+  .appt-badge { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 3px 9px; border-radius: 6px; margin-top: 4px; }
+  .appt-badge.doctor { background: var(--doctor-bg); color: var(--doctor-fg); }
+  .appt-badge.casemgr { background: var(--casemgr-bg); color: var(--casemgr-fg); }
+  .appt-badge.other { background: var(--other-bg); color: var(--other-fg); }
+
+  @keyframes pulse-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+  .blinking { animation: pulse-blink 1.4s ease-in-out infinite; }
+
+  .notes-row {
+    grid-column: 1 / -1; margin-top: 6px; padding-top: 10px; border-top: 1px dashed var(--line);
+    font-size: 12.5px; color: var(--slate); font-style: italic;
+  }
+  .notes-row .notes-label {
+    font-style: normal; font-weight: 700; color: var(--muted);
+    text-transform: uppercase; font-size: 10px; letter-spacing: 0.4px; margin-right: 6px;
   }
 
-  header{
-    padding:36px 32px 20px;
-    border-bottom:2px solid var(--ink);
-    display:flex;
-    justify-content:space-between;
-    align-items:flex-end;
-    flex-wrap:wrap;
-    gap:16px;
-  }
-  .kicker{
-    font-size:11px;
-    letter-spacing:.14em;
-    text-transform:uppercase;
-    color:var(--pine-dim);
-    margin:0 0 6px;
-  }
-  h1{
-    font-family:var(--serif);
-    font-weight:600;
-    font-size:clamp(28px,4vw,42px);
-    margin:0;
-    letter-spacing:-0.01em;
-  }
-  .clipboard{
-    font-size:11px;
-    color:var(--pine-dim);
-    text-align:right;
-    line-height:1.6;
-  }
-  #asof{color:var(--ink); font-weight:600;}
+  .status-chip { display: inline-block; font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: 6px; margin-top: 4px; }
+  .status-chip.chip-amber { background: var(--amber-bg); color: var(--amber); }
+  .status-chip.chip-blue { background: var(--doctor-bg); color: var(--doctor-fg); }
+  .status-chip.chip-green { background: var(--green-bg); color: var(--green); }
+  .status-chip.chip-gray { background: #eef1f0; color: var(--muted); }
+  .status-chip.chip-requested { background: #2563eb; color: #ffffff; box-shadow: 0 0 0 2px rgba(37,99,235,0.25); }
+  .status-chip.chip-yellow { background: #ffe14d; color: #6b5200; }
 
-  .stats{
-    display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
-    gap:1px;
-    background:var(--ink);
-    border-bottom:2px solid var(--ink);
-  }
-  .stat{
-    background:var(--paper);
-    padding:16px 20px;
-  }
-  .stat .n{
-    font-family:var(--serif);
-    font-size:30px;
-    font-weight:700;
-    display:block;
-    color:var(--pine);
-  }
-  .stat .l{
-    font-size:10px;
-    text-transform:uppercase;
-    letter-spacing:.1em;
-    color:var(--pine-dim);
+  .referral-tag {
+    margin-top: 6px; font-size: 11px; font-weight: 700;
+    letter-spacing: 0.3px;
+    background: var(--teal-light); color: var(--teal-deep);
+    padding: 5px 7px; border-radius: 6px;
+    display: block; text-align: center; line-height: 1.2;
+    word-break: break-word; white-space: normal;
   }
 
-  .toolbar{
-    padding:18px 32px;
-    display:flex;
-    gap:12px;
-    flex-wrap:wrap;
-    align-items:center;
-  }
-  .toolbar input, .toolbar select{
-    font-family:var(--mono);
-    font-size:13px;
-    padding:9px 12px;
-    border:1.5px solid var(--ink);
-    background:var(--card);
-    color:var(--ink);
-    border-radius:2px;
-  }
-  .toolbar input{flex:1; min-width:180px;}
-  .toolbar label{font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--pine-dim); margin-right:-6px;}
+  .med-banner { display: flex; align-items: center; gap: 8px; font-size: 12px; padding: 7px 12px; margin: 0; border-radius: 7px; }
 
-  main{padding:0 32px 60px;}
+  .bed-days-square {
+    display: inline-flex; flex-direction: column; align-items: center; justify-content: center;
+    margin-top: 7px; min-width: 46px; padding: 5px 8px;
+    background: var(--teal-light); border-radius: 8px; line-height: 1;
+  }
+  .bed-days-square .bd-num { font-size: 17px; font-weight: 800; color: var(--teal-deep); }
+  .bed-days-square .bd-lbl { font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: var(--slate); margin-top: 2px; }
+  .bed-days-square.bed-days-high { background: #e9ddf7; }
+  .bed-days-square.bed-days-high .bd-num { color: #6a2fa8; }
+  .bed-days-square.bed-days-high .bd-lbl { color: #7d55b0; }
 
-  #status{padding:40px 0; color:var(--pine-dim); font-size:13px;}
+  .empty-state, .error-state { text-align: center; padding: 60px 20px; color: var(--muted); font-size: 14px; }
+  .error-state { color: var(--red); }
 
-  .board{
-    border:1.5px solid var(--ink);
-    background:var(--card);
-    overflow-x:auto;
+  @media (max-width: 760px) {
+    .client-card { grid-template-columns: 1fr; }
+    .summary-bar { grid-template-columns: repeat(2, 1fr); }
+    .board-columns { grid-template-columns: 1fr; }
+    .legend { margin-left: 0; }
   }
-  table{
-    border-collapse:collapse;
-    width:100%;
-    min-width:960px;
-  }
-  thead th{
-    text-align:left;
-    font-size:10px;
-    text-transform:uppercase;
-    letter-spacing:.08em;
-    color:var(--paper);
-    background:var(--ink);
-    padding:11px 14px;
-    position:sticky;
-    top:0;
-    white-space:nowrap;
-  }
-  tbody td{
-    padding:13px 14px;
-    border-top:1px solid var(--line);
-    font-size:12.5px;
-    vertical-align:top;
-    white-space:nowrap;
-  }
-  tbody td.notes{white-space:normal; min-width:180px;}
-  tbody tr:hover{background:#f7f8f4;}
-
-  .initials{
-    font-family:var(--serif);
-    font-weight:700;
-    font-size:15px;
-    color:var(--ink);
-  }
-  .id-tag{
-    display:inline-block;
-    font-size:10.5px;
-    color:var(--pine-dim);
-    letter-spacing:.03em;
-  }
-
-  .badge{
-    display:inline-block;
-    padding:3px 9px;
-    border-radius:2px;
-    font-size:10.5px;
-    font-weight:600;
-    text-transform:uppercase;
-    letter-spacing:.03em;
-    border:1px solid transparent;
-    white-space:nowrap;
-  }
-  .b-pending{ background:var(--amber-soft); color:#7a5416; border-color:#d9b06b;}
-  .b-confirmed, .b-submitted, .b-complete{ background:#dbe8dc; color:var(--pine); border-color:#9cb99f;}
-  .b-none, .b-unknown{ background:var(--rust-soft); color:#7a2f1c; border-color:#d59b8a;}
-  .b-default{ background:var(--sky-soft); color:var(--sky); border-color:#a9c7d1;}
-
-  footer{
-    padding:20px 32px 40px;
-    font-size:11px;
-    color:var(--pine-dim);
-  }
-  footer a{color:var(--pine);}
-
-  .live-dot{
-    display:inline-block;
-    width:8px; height:8px;
-    border-radius:50%;
-    margin-right:6px;
-    vertical-align:middle;
-  }
-  .live-ok{ background:var(--pine); box-shadow:0 0 0 3px rgba(47,77,62,0.15); }
-  .live-loading{ background:var(--amber); animation:pulse 1s infinite; }
-  .live-error{ background:var(--rust); }
-  @keyframes pulse{ 0%,100%{opacity:1;} 50%{opacity:.35;} }
-
-  ::selection{background:var(--amber-soft);}
 </style>
 </head>
 <body>
 
 <header>
-  <div>
-    <p class="kicker">Program Operations</p>
-    <h1>Client Status Board</h1>
+  <div class="brand">
+    <div class="brand-mark">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 21s-7-4.35-9.5-8.5C.5 8.5 2.5 5 6 5c2 0 3.3 1 4 2 .7-1 2-2 4-2 3.5 0 5.5 3.5 3.5 7.5C19 16.65 12 21 12 21z"/>
+      </svg>
+    </div>
+    <div class="brand-text">
+      <h1>Crisis Respite Program</h1>
+      <div class="sub">Client Status Board</div>
+    </div>
   </div>
-  <div class="clipboard">
-    <span class="live-dot live-loading" id="liveDot"></span>Live from workbook · <span id="asof">loading…</span><br>
-    ID + initials only — no client names displayed · refreshes every 60s
+  <div class="header-right">
+    <span class="meta" id="last-updated"><span class="status-dot"></span>Connecting...</span>
+    <button class="icon-btn" onclick="refreshNow()">Refresh</button>
   </div>
 </header>
 
-<div class="stats" id="stats"></div>
-
-<div class="toolbar">
-  <input id="search" type="text" placeholder="Search by ID, initials, case manager, bed…">
-  <label>Appt status</label>
-  <select id="filterAppt"><option value="">All</option></select>
-  <label>Pharmacy</label>
-  <select id="filterPharm"><option value="">All</option></select>
-</div>
-
 <main>
-  <p id="status">Loading Client Status Board…</p>
-  <div class="board" id="boardWrap" style="display:none;">
-    <table>
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Initials</th>
-          <th>Bed</th>
-          <th>LOC</th>
-          <th>Case Manager</th>
-          <th>Referral</th>
-          <th>Doctor</th>
-          <th>Appt Status</th>
-          <th>Appt Date/Time</th>
-          <th>Pharmacy</th>
-          <th>Pharmacy Status</th>
-          <th>Med Times</th>
-          <th>Notes</th>
-        </tr>
-      </thead>
-      <tbody id="rows"></tbody>
-    </table>
+
+  <div id="dashboard" style="display:none;">
+    <div class="summary-bar">
+      <div class="summary-card red"><div class="num" id="count-red">0</div><div class="lbl">Needs action</div></div>
+      <div class="summary-card amber"><div class="num" id="count-amber">0</div><div class="lbl">Upcoming / watch</div></div>
+      <div class="summary-card green"><div class="num" id="count-green">0</div><div class="lbl">On track</div></div>
+      <div class="summary-card teal"><div class="num" id="count-total">0</div><div class="lbl">Total clients</div></div>
+    </div>
+
+    <div class="filter-row">
+      <button class="filter-btn active" data-filter="all" onclick="setFilter('all')">All</button>
+      <button class="filter-btn" data-filter="red" onclick="setFilter('red')">Needs action</button>
+      <button class="filter-btn" data-filter="amber" onclick="setFilter('amber')">Upcoming</button>
+      <button class="filter-btn" data-filter="green" onclick="setFilter('green')">On track</button>
+      <div class="legend">
+        <span><span class="legend-dot" style="background:#8f74c9;border:1px solid #6a4fa8;"></span>Male</span>
+        <span><span class="legend-dot" style="background:#e0952f;border:1px solid #b5741f;"></span>Female</span>
+      </div>
+    </div>
+
+    <div class="board-columns">
+      <div>
+        <div class="board-column-header male"><span class="dot"></span>Male</div>
+        <div class="client-list" id="client-list-male"></div>
+      </div>
+      <div>
+        <div class="board-column-header female"><span class="dot"></span>Female</div>
+        <div class="client-list" id="client-list-female"></div>
+      </div>
+    </div>
+    <div class="empty-state" id="empty-state" style="display:none;">No clients match this filter.</div>
   </div>
+
+  <div class="error-state" id="error-state" style="display:none;"></div>
+
 </main>
 
-<footer>
-  Source: Client Status Board sheet, fetched directly from the workbook in this repository. Client names are excluded by design — only Member ID and initials are shown.
-</footer>
-
 <script>
-const fileUrl = 'https://raw.githubusercontent.com/melissacallis/excel_to_github/main/Client_Needs_Tracker_Finalexcel.xlsx';
-const SHEET_NAME = 'Client Status Board';
-
-let allRows = [];
-
-function badgeClass(val){
-  if(!val) return 'b-default';
-  const v = String(val).toLowerCase();
-  if(v.includes('pending')) return 'b-pending';
-  if(v.includes('submit') || v.includes('confirm') || v.includes('complete')) return 'b-confirmed';
-  if(v.includes('unknown') || v === '-' || v.includes('none')) return 'b-none';
-  return 'b-default';
-}
-
-function fmtDate(v){
-  if(!v) return '—';
-  if(v instanceof Date) return v.toLocaleDateString('en-US',{month:'short',day:'numeric'});
-  return v;
-}
-function fmtTime(v){
-  if(!v) return '';
-  if(v instanceof Date) return v.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
-  return v;
-}
-
-function render(rows){
-  const tbody = document.getElementById('rows');
-  tbody.innerHTML = '';
-  rows.forEach(r=>{
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td><span class="id-tag">${r['Member ID'] ?? ''}</span></td>
-      <td><span class="initials">${r['Client Initials'] ?? '—'}</span></td>
-      <td>${r['Bed'] ?? '—'}</td>
-      <td>${r['LOC'] ?? '—'}</td>
-      <td>${r['Case Manager'] ?? '—'}</td>
-      <td>${r['Referral source'] ?? '—'}</td>
-      <td>${r['Doctor'] ?? '—'}</td>
-      <td><span class="badge ${badgeClass(r['Appointment Status'])}">${r['Appointment Status'] ?? '—'}</span></td>
-      <td>${fmtDate(r['Appointment Date'])} ${fmtTime(r['Appointment Time'])}</td>
-      <td>${r['Pharmacy'] ?? '—'}</td>
-      <td><span class="badge ${badgeClass(r['Pharmacy Status'])}">${r['Pharmacy Status'] ?? '—'}</span></td>
-      <td>${r['Med Times'] ?? '—'}</td>
-      <td class="notes">${r['Notes'] ?? ''}</td>
-    `;
-    tbody.appendChild(tr);
-  });
-}
-
-function populateFilters(rows){
-  const apptSel = document.getElementById('filterAppt');
-  const pharmSel = document.getElementById('filterPharm');
-  const prevAppt = apptSel.value;
-  const prevPharm = pharmSel.value;
-
-  apptSel.innerHTML = '<option value="">All</option>';
-  pharmSel.innerHTML = '<option value="">All</option>';
-
-  const appts = [...new Set(rows.map(r=>r['Appointment Status']).filter(Boolean))];
-  const pharms = [...new Set(rows.map(r=>r['Pharmacy Status']).filter(Boolean))];
-  appts.forEach(v=>{
-    const o = document.createElement('option'); o.value=v; o.textContent=v;
-    apptSel.appendChild(o);
-  });
-  pharms.forEach(v=>{
-    const o = document.createElement('option'); o.value=v; o.textContent=v;
-    pharmSel.appendChild(o);
-  });
-
-  // restore previous selection if it still exists
-  if([...apptSel.options].some(o=>o.value===prevAppt)) apptSel.value = prevAppt;
-  if([...pharmSel.options].some(o=>o.value===prevPharm)) pharmSel.value = prevPharm;
-}
-
-function renderStats(rows){
-  const total = rows.length;
-  const pendingAppt = rows.filter(r=>String(r['Appointment Status']||'').toLowerCase().includes('pending')).length;
-  const pendingRx = rows.filter(r=>String(r['Pharmacy Status']||'').toLowerCase().includes('pending')).length;
-  const locs = new Set(rows.map(r=>r['LOC']).filter(Boolean)).size;
-  document.getElementById('stats').innerHTML = `
-    <div class="stat"><span class="n">${total}</span><span class="l">Clients on board</span></div>
-    <div class="stat"><span class="n">${pendingAppt}</span><span class="l">Appt requested/pending</span></div>
-    <div class="stat"><span class="n">${pendingRx}</span><span class="l">Rx submitted/pending</span></div>
-    <div class="stat"><span class="n">${locs}</span><span class="l">Levels of care active</span></div>
-  `;
-}
-
-function applyFilters(){
-  const q = document.getElementById('search').value.toLowerCase();
-  const appt = document.getElementById('filterAppt').value;
-  const pharm = document.getElementById('filterPharm').value;
-  let rows = allRows.filter(r=>{
-    const hay = [r['Member ID'],r['Client Initials'],r['Case Manager'],r['Bed'],r['Doctor'],r['Referral source']]
-      .join(' ').toLowerCase();
-    if(q && !hay.includes(q)) return false;
-    if(appt && r['Appointment Status'] !== appt) return false;
-    if(pharm && r['Pharmacy Status'] !== pharm) return false;
-    return true;
-  });
-  render(rows);
-}
-
-document.getElementById('search').addEventListener('input', applyFilters);
-document.getElementById('filterAppt').addEventListener('change', applyFilters);
-document.getElementById('filterPharm').addEventListener('change', applyFilters);
-
-const REFRESH_SECONDS = 60; // how often to re-pull the data
+let clients = [];
+let currentFilter = 'all';
 let refreshTimer = null;
 
-function setLiveDot(state){
-  const el = document.getElementById('liveDot');
-  if(!el) return;
-  el.className = 'live-dot live-' + state;
+const APPT_SOON_DAYS = 2;
+const MED_WINDOW_MIN = 15;
+
+function initials(str) { return (str || '?').trim(); }
+
+function genderFromBed(bed) {
+  if (!bed) return 'unknown';
+  const b = bed.trim().toUpperCase();
+  if (b.startsWith('M')) return 'male';
+  if (b.startsWith('F')) return 'female';
+  return 'unknown';
 }
 
-function loadData(isBackground){
-  setLiveDot('loading');
-  // cache-bust: raw.githubusercontent.com CDN-caches for ~5 min otherwise
-  const bustUrl = fileUrl + (fileUrl.includes('?') ? '&' : '?') + 't=' + Date.now();
-
-  return fetch(bustUrl, {cache:'no-store'})
-    .then(res=>{
-      if(!res.ok) throw new Error('File not found: '+res.status);
-      return res.arrayBuffer();
-    })
-    .then(data=>{
-      const wb = XLSX.read(data, {type:'array', cellDates:true});
-      const sheet = wb.Sheets[SHEET_NAME];
-      if(!sheet) throw new Error(`Sheet "${SHEET_NAME}" not found`);
-      const json = XLSX.utils.sheet_to_json(sheet, {range:3, defval:null});
-      allRows = json.filter(r => r['Member ID']);
-
-      document.getElementById('asof').textContent = new Date().toLocaleString('en-US',{
-        month:'short', day:'numeric', hour:'numeric', minute:'2-digit', second:'2-digit'
-      });
-      document.getElementById('status').style.display='none';
-      document.getElementById('boardWrap').style.display='block';
-
-      populateFilters(allRows);
-      renderStats(allRows);
-      applyFilters();
-      setLiveDot('ok');
-    })
-    .catch(err=>{
-      setLiveDot('error');
-      if(!isBackground){
-        document.getElementById('status').textContent = 'Error loading board: ' + err.message;
-      }
-      console.error(err);
-    });
+function daysUntil(dateStr) {
+  if (!dateStr) return null;
+  const d = new Date(dateStr);
+  if (isNaN(d)) return null;
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  d.setHours(0,0,0,0);
+  return Math.round((d - today) / 86400000);
 }
 
-function startAutoRefresh(){
-  if(refreshTimer) clearInterval(refreshTimer);
-  refreshTimer = setInterval(()=>loadData(true), REFRESH_SECONDS * 1000);
+function bedDays(admitStr) {
+  if (!admitStr) return null;
+  const d = new Date(admitStr);
+  if (isNaN(d)) return null;
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  d.setHours(0,0,0,0);
+  const days = Math.round((today - d) / 86400000);
+  return days >= 0 ? days : null;
 }
 
-document.addEventListener('visibilitychange', ()=>{
-  if(document.hidden){
-    if(refreshTimer) clearInterval(refreshTimer);
+function apptTypeClass(apptWith) {
+  const v = (apptWith || '').trim().toLowerCase();
+  if (v === 'doctor') return 'doctor';
+  if (v === 'case manager') return 'casemgr';
+  if (v === 'other') return 'other';
+  return null;
+}
+
+function apptStatusClass(status) {
+  const v = (status || '').trim().toLowerCase();
+  if (v === 'requested') return 'chip-requested';
+  if (v === 'scheduled') return 'chip-blue';
+  if (v === 'completed') return 'chip-green';
+  return 'chip-gray';
+}
+
+function pharmStatusClass(status) {
+  const v = (status || '').trim().toLowerCase();
+  if (v.indexOf('submitted') !== -1 || v.indexOf('pending') !== -1) return 'chip-yellow';
+  if (v === 'waiting scripts') return 'chip-amber';
+  if (v === 'dropped off') return 'chip-blue';
+  if (v === 'picked up') return 'chip-green';
+  return 'chip-gray';
+}
+
+// Turn raw med times ("8:00 AM / 8:00 PM | 7:00 AM | 8:00 AM") into a clean, unique,
+// sorted list of just the distinct times ("7:00 AM, 8:00 AM, 8:00 PM").
+function cleanMedTimes(raw) {
+  if (!raw) return '';
+  const pieces = String(raw).split(/[|\/]/);
+  const seen = {};
+  const times = [];
+  pieces.forEach(p => {
+    const t = p.trim();
+    if (!t) return;
+    const m = t.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+    if (!m) return;
+    const key = t.toUpperCase();
+    if (seen[key]) return;
+    seen[key] = true;
+    let h = parseInt(m[1], 10);
+    const min = parseInt(m[2], 10);
+    const ap = m[3].toUpperCase();
+    if (ap === 'PM' && h !== 12) h += 12;
+    if (ap === 'AM' && h === 12) h = 0;
+    times.push({ label: t.replace(/\s+/g, ' '), sortVal: h * 60 + min });
+  });
+  times.sort((a, b) => a.sortVal - b.sortVal);
+  return times.map(x => x.label).join(', ');
+}
+
+function nowInCentral() {
+  const str = new Date().toLocaleString('en-US', { timeZone: 'America/Chicago' });
+  return new Date(str);
+}
+
+function parseMedTimesToMinutes(medTimesStr) {
+  const results = [];
+  if (!medTimesStr) return results;
+  const matches = medTimesStr.match(/\d{1,2}:\d{2}\s*(AM|PM)/gi);
+  if (!matches) return results;
+  matches.forEach(m => {
+    const parts = m.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+    if (!parts) return;
+    let h = parseInt(parts[1], 10);
+    const min = parseInt(parts[2], 10);
+    const ampm = parts[3].toUpperCase();
+    if (ampm === 'PM' && h !== 12) h += 12;
+    if (ampm === 'AM' && h === 12) h = 0;
+    results.push(h * 60 + min);
+  });
+  return results;
+}
+
+// Returns 'due' when any med time is within 15 min before through 15 min after now
+// (Central time), otherwise '' (show the normal listing).
+function medStatus(medTimesStr) {
+  const times = parseMedTimesToMinutes(medTimesStr);
+  if (times.length === 0) return '';
+  const central = nowInCentral();
+  const nowMin = central.getHours() * 60 + central.getMinutes();
+  for (const t of times) {
+    let diff = Math.abs(t - nowMin);
+    diff = Math.min(diff, 1440 - diff); // wrap around midnight
+    if (diff <= MED_WINDOW_MIN) return 'due';
+  }
+  return '';
+}
+
+function evaluateScripts(c) {
+  const status = (c['Scripts Status'] || '').trim().toLowerCase();
+  if (status === 'submitted') return { label: 'Submitted \u2014 pending pharmacy', level: 'amber', blink: false };
+  if (status === 'picked up' || status === 'ready' || status === 'ready for pickup') return { label: 'Ready / picked up', level: 'green', blink: false };
+  if (status === 'dropped off') return { label: 'Dropped off at pharmacy', level: 'amber', blink: false };
+  return { label: '', level: 'muted', blink: false };
+}
+
+function evaluateClient(c) {
+  const apptDateRaw = c['Appointment Date'];
+  let worst = 'green';
+  function escalate(level) {
+    if (level === 'red') worst = 'red';
+    else if (level === 'amber' && worst !== 'red') worst = 'amber';
+  }
+  if (!apptDateRaw) {
+    escalate('red');
   } else {
-    loadData(true);
-    startAutoRefresh();
+    const until = daysUntil(apptDateRaw);
+    if (until !== null) {
+      if (until < 0) escalate('red');
+      else if (until <= APPT_SOON_DAYS) escalate('amber');
+    }
+  }
+  const scripts = evaluateScripts(c);
+  if (scripts.level === 'red') escalate('red');
+  else if (scripts.level === 'amber') escalate('amber');
+  return { urgency: worst, scripts };
+}
+
+function buildCardHtml(c, ev) {
+  const gender = genderFromBed(c['Bed']);
+  const apptClass = apptTypeClass(c['Appointment With']);
+  const apptBadgeHtml = apptClass ? `<span class="appt-badge ${apptClass}">${c['Appointment With']}</span>` : '';
+  const scriptsClasses = ['badge', ev.scripts.level, ev.scripts.blink ? 'blinking' : ''].join(' ').trim();
+
+  const notesText = (c['Notes'] || '').trim();
+  const notesHtml = notesText ? `<div class="notes-row"><span class="notes-label">Notes</span>${notesText}</div>` : '';
+
+  const card = document.createElement('div');
+  const rawMedTimes = (c['Med Times'] || '').trim();
+  const medTimes = cleanMedTimes(rawMedTimes);
+  const mStatus = medStatus(rawMedTimes);
+  card.className = `client-card gender-${gender} urgent-${ev.urgency}`;
+
+  const apptStatus = (c['Appointment Status'] || '').trim();
+  const apptStatusHtml = apptStatus ? `<span class="status-chip ${apptStatusClass(apptStatus)}">${apptStatus}</span>` : '';
+
+  const apptTime = (c['Appointment Time'] || '').trim();
+  const isScheduled = apptStatus.toLowerCase() === 'scheduled';
+  let timeLineHtml;
+  if (apptTime) {
+    timeLineHtml = `<div class="data-line"><span class="k">Time</span><span class="v">${apptTime}</span></div>`;
+  } else if (isScheduled) {
+    // Scheduled but no time entered - flag it
+    timeLineHtml = `<div class="data-line"><span class="k">Time</span><span class="v time-missing">\u26a0 time needed</span></div>`;
+  } else {
+    timeLineHtml = `<div class="data-line"><span class="k">Time</span><span class="v">\u2014</span></div>`;
+  }
+
+  const pharmStatus = (c['Pharmacy Status'] || '').trim();
+  const pharmStatusHtml = pharmStatus ? `<span class="status-chip ${pharmStatusClass(pharmStatus)}">${pharmStatus}</span>` : '';
+
+  const clockIcon = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="M5 3 2 6"/><path d="m22 6-3-3"/><path d="M6.38 18.7 4 21"/><path d="M17.64 18.67 20 21"/></svg>';
+  let medTimesHtml = '';
+  if (medTimes && mStatus === 'due') {
+    medTimesHtml = `<div class="alert alert-success med-banner" role="alert">${clockIcon}<span><strong>MEDS DUE NOW</strong> \u2014 ${medTimes}</span></div>`;
+  } else if (medTimes) {
+    medTimesHtml = `<div class="alert alert-info med-banner" role="alert">${clockIcon}<span><strong>Med Times:</strong> ${medTimes}</span></div>`;
+  }
+
+  const referral = (c['Referral source'] || '').trim();
+  const referralHtml = referral ? `<div class="referral-tag" title="Referred from ${referral}">${referral}</div>` : '';
+
+  card.innerHTML = `
+    <div class="avatar-col">
+      <div class="avatar ${gender}">${initials(c['Client Initials'])}</div>
+      ${referralHtml}
+    </div>
+    <div class="cell">
+      <div class="field-label">Client</div>
+      <div class="field-value big">${c['Bed'] || '\u2014'}</div>
+      <div class="data-line"><span class="k">ID</span><span class="v">${c['Member ID'] || '\u2014'}</span></div>
+      <div class="data-line"><span class="k">LOC</span><span class="v">${c['LOC'] || '\u2014'}</span></div>
+      <div class="data-line"><span class="k">CM</span><span class="v">${c['Case Manager'] || '\u2014'}</span></div>
+    </div>
+    <div class="cell">
+      <div class="field-label">Appointment</div>
+      <div class="appt-group">${apptBadgeHtml}${apptStatusHtml}</div>
+      <div class="data-line"><span class="k">Date</span><span class="v">${c['Appointment Date'] || '\u2014'}</span></div>
+      ${timeLineHtml}
+    </div>
+    <div class="cell">
+      <div class="field-label">Scripts / Pharmacy</div>
+      <div class="field-value">${c['Pharmacy'] || '\u2014'}</div>
+      ${c['Doctor'] ? `<div class="data-line"><span class="k">Dr</span><span class="v">${c['Doctor']}</span></div>` : ''}
+      ${ev.scripts.label ? `<div style="margin-top:5px;"><span class="${scriptsClasses}">${ev.scripts.label}</span></div>` : ''}
+      ${pharmStatusHtml}
+    </div>
+    <div class="cell">
+      <div class="field-label">Admitted</div>
+      <div class="field-value">${c['Admit Date'] || '\u2014'}</div>
+      ${(() => {
+        const bd = bedDays(c['Admit Date']);
+        if (bd === null) return '';
+        const over = bd > 5 ? ' bed-days-high' : '';
+        return `<div class="bed-days-square${over}"><span class="bd-num">${bd}</span><span class="bd-lbl">bed day${bd === 1 ? '' : 's'}</span></div>`;
+      })()}
+    </div>
+  `;
+  const flagRow = document.createElement('div');
+  flagRow.className = 'flags';
+  flagRow.style.gridColumn = '1 / -1';
+  flagRow.innerHTML = medTimesHtml + notesHtml;
+  card.appendChild(flagRow);
+  return card;
+}
+
+function buildEmptyBedCard(bedLabel) {
+  const card = document.createElement('div');
+  card.className = 'client-card empty-bed';
+  card.innerHTML = `
+    <div class="avatar unknown">\u2014</div>
+    <div>
+      <div class="field-label">Bed</div>
+      <div class="field-value">${bedLabel} \u2014 Open</div>
+    </div>
+  `;
+  return card;
+}
+
+function renderClients() {
+  const listMale = document.getElementById('client-list-male');
+  const listFemale = document.getElementById('client-list-female');
+  const emptyState = document.getElementById('empty-state');
+  listMale.innerHTML = '';
+  listFemale.innerHTML = '';
+
+  let counts = { red: 0, amber: 0, green: 0 };
+  const evaluated = clients.map(c => ({ raw: c, eval: evaluateClient(c), gender: genderFromBed(c['Bed']) }));
+  evaluated.forEach(item => { if ((item.raw['Client Initials'] || '').trim()) counts[item.eval.urgency]++; });
+
+  document.getElementById('count-red').textContent = counts.red;
+  document.getElementById('count-amber').textContent = counts.amber;
+  document.getElementById('count-green').textContent = counts.green;
+  document.getElementById('count-total').textContent = evaluated.filter(e => (e.raw['Client Initials'] || '').trim()).length;
+
+  const filtered = currentFilter === 'all'
+    ? evaluated
+    : evaluated.filter(e => (e.raw['Client Initials'] || '').trim() ? e.eval.urgency === currentFilter : true);
+
+  const bedSort = (a, b) => (a.raw['Bed'] || '').localeCompare(b.raw['Bed'] || '', undefined, { numeric: true });
+  const maleRows = filtered.filter(e => e.gender === 'male').sort(bedSort);
+  const femaleRows = filtered.filter(e => e.gender === 'female').sort(bedSort);
+
+  emptyState.style.display = (maleRows.length === 0 && femaleRows.length === 0 && currentFilter !== 'all') ? 'block' : 'none';
+
+  maleRows.forEach(({ raw: c, eval: ev }) => {
+    const hasClient = (c['Client Initials'] || '').trim();
+    listMale.appendChild(hasClient ? buildCardHtml(c, ev) : buildEmptyBedCard(c['Bed'] || 'Unassigned'));
+  });
+  femaleRows.forEach(({ raw: c, eval: ev }) => {
+    const hasClient = (c['Client Initials'] || '').trim();
+    listFemale.appendChild(hasClient ? buildCardHtml(c, ev) : buildEmptyBedCard(c['Bed'] || 'Unassigned'));
+  });
+}
+
+function setFilter(f) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === f));
+  renderClients();
+}
+
+// ⚠️ Update this if the repo/branch/filename ever changes
+const fileUrl = 'https://raw.githubusercontent.com/melissacallis/excel_to_github/main/Client_Needs_Tracker_Finalexcel.xlsx';
+const SHEET_NAME = 'Client Status Board';
+const REFRESH_MS = 60 * 1000; // 60s auto-refresh
+
+async function fetchData() {
+  try {
+    // cache-bust: raw.githubusercontent.com CDN-caches for ~5 min otherwise
+    const bustUrl = fileUrl + (fileUrl.includes('?') ? '&' : '?') + 't=' + Date.now();
+    const res = await fetch(bustUrl, { cache: 'no-store' });
+    if (!res.ok) { showError('File not found on GitHub (status ' + res.status + '). Check the repo/filename in fileUrl.'); return; }
+    const data = await res.arrayBuffer();
+    const wb = XLSX.read(data, { type: 'array', cellDates: false });
+    const sheet = wb.Sheets[SHEET_NAME];
+    if (!sheet) { showError('Sheet "' + SHEET_NAME + '" not found. Sheets in file: ' + wb.SheetNames.join(', ')); return; }
+    // header row is row 4 in the sheet (0-indexed row 3), matches the workbook layout
+    const json = XLSX.utils.sheet_to_json(sheet, { range: 3, defval: null });
+    clients = json.filter(r => r['Member ID']); // drop blank rows
+
+    document.getElementById('dashboard').style.display = 'block';
+    document.getElementById('error-state').style.display = 'none';
+    document.getElementById('last-updated').innerHTML = '<span class="status-dot"></span>Updated ' + new Date().toLocaleTimeString();
+    renderClients();
+  } catch (err) {
+    showError('Error loading data: ' + err.message);
+  }
+}
+
+function showError(msg) {
+  document.getElementById('dashboard').style.display = 'none';
+  document.getElementById('error-state').style.display = 'block';
+  document.getElementById('error-state').textContent = msg;
+}
+
+function refreshNow() { fetchData(); }
+
+refreshTimer = setInterval(fetchData, REFRESH_MS);
+setInterval(function () { if (clients && clients.length) renderClients(); }, 60 * 1000);
+
+// pause polling when tab isn't visible, resume + refresh immediately when it is
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    if (refreshTimer) clearInterval(refreshTimer);
+  } else {
+    fetchData();
+    refreshTimer = setInterval(fetchData, REFRESH_MS);
   }
 });
 
-loadData(false).then(startAutoRefresh);
+fetchData();
 </script>
 
 </body>
