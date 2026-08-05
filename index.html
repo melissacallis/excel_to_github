@@ -8,7 +8,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
   :root {
     --ink: #1c2b29;
@@ -255,11 +254,21 @@
   </div>
   <div class="header-right">
     <span class="meta" id="last-updated"><span class="status-dot"></span>Connecting...</span>
+    <button class="icon-btn" onclick="showConfig()">Settings</button>
     <button class="icon-btn" onclick="refreshNow()">Refresh</button>
   </div>
 </header>
 
 <main>
+
+  <div id="config-screen" style="display:none;">
+    <h2>Connect your data source</h2>
+    <p>Paste the Web App URL from your Google Apps Script deployment. This is stored only in your browser and is never sent anywhere except directly to your own script.</p>
+    <label for="script-url">Apps Script Web App URL</label>
+    <input type="text" id="script-url" placeholder="https://script.google.com/macros/s/.../exec">
+    <button onclick="saveConfig()">Save and connect</button>
+    <div id="config-error"></div>
+  </div>
 
   <div id="dashboard" style="display:none;">
     <div class="summary-bar">
@@ -298,6 +307,7 @@
 </main>
 
 <script>
+let scriptUrl = localStorage.getItem('clientStatusScriptUrl') || '';
 let clients = [];
 let currentFilter = 'all';
 let refreshTimer = null;
@@ -598,31 +608,26 @@ function setFilter(f) {
   renderClients();
 }
 
-// ⚠️ Update this if the repo/branch/filename ever changes
-const fileUrl = 'https://raw.githubusercontent.com/melissacallis/excel_to_github/main/Client_Needs_Tracker_Finalexcel.xlsx';
-const SHEET_NAME = 'Client Status Board';
-const REFRESH_MS = 60 * 1000; // 60s auto-refresh
-
 async function fetchData() {
+  if (!scriptUrl) { showConfig(); return; }
   try {
-    // cache-bust: raw.githubusercontent.com CDN-caches for ~5 min otherwise
-    const bustUrl = fileUrl + (fileUrl.includes('?') ? '&' : '?') + 't=' + Date.now();
-    const res = await fetch(bustUrl, { cache: 'no-store' });
-    if (!res.ok) { showError('File not found on GitHub (status ' + res.status + '). Check the repo/filename in fileUrl.'); return; }
-    const data = await res.arrayBuffer();
-    const wb = XLSX.read(data, { type: 'array', cellDates: false });
-    const sheet = wb.Sheets[SHEET_NAME];
-    if (!sheet) { showError('Sheet "' + SHEET_NAME + '" not found. Sheets in file: ' + wb.SheetNames.join(', ')); return; }
-    // header row is row 4 in the sheet (0-indexed row 3), matches the workbook layout
-    const json = XLSX.utils.sheet_to_json(sheet, { range: 3, defval: null });
-    clients = json.filter(r => r['Member ID']); // drop blank rows
-
+    const res = await fetch(scriptUrl);
+    const rawText = await res.text();
+    let json;
+    try { json = JSON.parse(rawText); }
+    catch (parseErr) {
+      showError('The data source did not return valid data (script error or not redeployed). Raw start: ' + rawText.substring(0, 200));
+      return;
+    }
+    if (json.error) { showError('Access issue: ' + json.error); return; }
+    clients = json.clients || [];
     document.getElementById('dashboard').style.display = 'block';
     document.getElementById('error-state').style.display = 'none';
-    document.getElementById('last-updated').innerHTML = '<span class="status-dot"></span>Updated ' + new Date().toLocaleTimeString();
+    document.getElementById('config-screen').style.display = 'none';
+    document.getElementById('last-updated').innerHTML = '<span class="status-dot"></span>Updated ' + new Date(json.updated).toLocaleTimeString();
     renderClients();
   } catch (err) {
-    showError('Error loading data: ' + err.message);
+    showError('Network-level failure reaching the URL (likely CORS or an invalid/undeployed URL). Detail: ' + err.message);
   }
 }
 
@@ -632,20 +637,31 @@ function showError(msg) {
   document.getElementById('error-state').textContent = msg;
 }
 
+function showConfig() {
+  document.getElementById('config-screen').style.display = 'block';
+  document.getElementById('dashboard').style.display = 'none';
+  document.getElementById('error-state').style.display = 'none';
+  document.getElementById('script-url').value = scriptUrl;
+}
+
+function saveConfig() {
+  const val = document.getElementById('script-url').value.trim();
+  const errorDiv = document.getElementById('config-error');
+  if (!val.startsWith('https://script.google.com/')) {
+    errorDiv.textContent = 'That doesn\'t look like a Google Apps Script Web App URL.';
+    errorDiv.style.display = 'block';
+    return;
+  }
+  scriptUrl = val;
+  localStorage.setItem('clientStatusScriptUrl', val);
+  errorDiv.style.display = 'none';
+  fetchData();
+}
+
 function refreshNow() { fetchData(); }
 
-refreshTimer = setInterval(fetchData, REFRESH_MS);
+refreshTimer = setInterval(fetchData, 5 * 60 * 1000);
 setInterval(function () { if (clients && clients.length) renderClients(); }, 60 * 1000);
-
-// pause polling when tab isn't visible, resume + refresh immediately when it is
-document.addEventListener('visibilitychange', () => {
-  if (document.hidden) {
-    if (refreshTimer) clearInterval(refreshTimer);
-  } else {
-    fetchData();
-    refreshTimer = setInterval(fetchData, REFRESH_MS);
-  }
-});
 
 fetchData();
 </script>

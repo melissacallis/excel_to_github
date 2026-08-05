@@ -1,0 +1,503 @@
+/* ==========================================================
+   Crisis Respite Program Dashboard
+   style.css
+========================================================== */
+
+:root{
+
+    --primary:#0F4C5C;
+    --primary-light:#2B6C80;
+
+    --male:#2563EB;
+    --female:#A855F7;
+
+    --success:#16A34A;
+    --warning:#F59E0B;
+    --danger:#DC2626;
+
+    --bg:#F5F7FA;
+
+    --card:#FFFFFF;
+
+    --text:#1F2937;
+
+    --border:#E5E7EB;
+
+    --shadow:0 8px 24px rgba(0,0,0,.08);
+
+}
+
+body{
+
+    background:var(--bg);
+
+    font-family:
+    "Segoe UI",
+    Roboto,
+    Arial,
+    sans-serif;
+
+    color:var(--text);
+
+}
+
+
+
+/* ==========================
+      NAVBAR
+========================== */
+
+.navbar{
+
+    background:linear-gradient(
+    90deg,
+    var(--primary),
+    var(--primary-light));
+
+    padding:18px 30px;
+
+    color:white;
+
+}
+
+.navbar h3{
+
+    font-weight:700;
+
+}
+
+.navbar .badge{
+
+    font-size:.75rem;
+
+}
+
+
+
+/* ==========================
+      KPI CARDS
+========================== */
+
+.stat-card{
+
+    border:none;
+
+    border-radius:18px;
+
+    color:white;
+
+    box-shadow:var(--shadow);
+
+    transition:.25s;
+
+}
+
+.stat-card:hover{
+
+    transform:translateY(-4px);
+
+    box-shadow:0 16px 36px rgba(0,0,0,.18);
+
+}
+
+.stat-title{
+
+    text-transform:uppercase;
+
+    font-size:.75rem;
+
+    letter-spacing:1px;
+
+    opacity:.9;
+
+}
+
+.stat-number{
+
+    font-size:2.2rem;
+
+    font-weight:700;
+
+    margin-top:8px;
+
+}
+
+.primary{
+
+    background:#0F4C5C;
+
+}
+
+.success{
+
+    background:#16A34A;
+
+}
+
+.warning{
+
+    background:#F59E0B;
+
+}
+
+.danger{
+
+    background:#DC2626;
+
+}
+
+.info{
+
+    background:#2563EB;
+
+}
+
+
+
+/* ==========================
+      SEARCH
+========================== */
+
+.input-group-text{
+
+    background:white;
+
+    border-radius:12px 0 0 12px;
+
+}
+
+.form-control{
+
+    border-radius:0 12px 12px 0;
+
+    border:1px solid var(--border);
+
+    box-shadow:none;
+
+}
+
+.form-control:focus{
+
+    border-color:var(--primary);
+
+    box-shadow:0 0 0 .15rem rgba(15,76,92,.2);
+
+}
+
+
+
+/* ==========================
+     SECTION HEADERS
+========================== */
+
+.section-header{
+
+    color:white;
+
+    padding:15px 20px;
+
+    border-radius:15px;
+
+    margin-bottom:20px;
+
+    font-size:1.25rem;
+
+    font-weight:700;
+
+    box-shadow:var(--shadow);
+
+}
+
+.male-header{
+
+    background:var(--male);
+
+}
+
+.female-header{
+
+    background:var(--female);
+
+}
+
+
+
+/* ==========================
+      RESIDENT CARD
+========================== */
+
+.resident-card{
+
+    border:none;
+
+    border-radius:18px;
+
+    box-shadow:var(--shadow);
+
+    transition:.25s;
+
+    overflow:hidden;
+
+}
+
+.resident-card:hover{
+
+    transform:translateY(-6px);
+
+    box-shadow:0 18px 40px rgba(0,0,0,.16);
+
+}
+
+.resident-card .card-body{
+
+    padding:24px;
+
+}
+
+
+
+/* ==========================
+      CLIENT NAME
+========================== */
+
+.resident-name{
+
+    font-size:1.5rem;
+
+    font-weight:700;
+
+    margin-bottom:5px;
+
+}
+
+.bed-number{
+
+    color:#6B7280;
+
+    font-size:1rem;
+
+    font-weight:600;
+
+}
+
+
+
+/* ==========================
+      STATUS BADGES
+========================== */
+
+.statusBadge{
+
+    font-size:.85rem;
+
+    padding:8px 14px;
+
+}
+
+.status-danger{
+
+    background:#DC2626;
+
+}
+
+.status-warning{
+
+    background:#F59E0B;
+
+}
+
+.status-success{
+
+    background:#16A34A;
+
+}
+
+
+
+/* ==========================
+      CARD CONTENT
+========================== */
+
+.resident-card p{
+
+    margin-bottom:16px;
+
+    line-height:1.45;
+
+}
+
+.resident-card strong{
+
+    color:var(--primary);
+
+}
+
+.resident-card i{
+
+    color:var(--primary);
+
+    margin-right:6px;
+
+}
+
+
+
+/* ==========================
+      NOTES
+========================== */
+
+.notes{
+
+    background:#F8FAFC;
+
+    border-radius:10px;
+
+    padding:14px;
+
+    border-left:5px solid var(--primary);
+
+}
+
+.notesText{
+
+    color:#374151;
+
+}
+
+
+
+/* ==========================
+      BUTTONS
+========================== */
+
+.btn-primary{
+
+    background:var(--primary);
+
+    border:none;
+
+    border-radius:10px;
+
+    padding:10px 20px;
+
+}
+
+.btn-primary:hover{
+
+    background:#144F60;
+
+}
+
+
+
+/* ==========================
+      BADGES
+========================== */
+
+.badge{
+
+    font-weight:600;
+
+}
+
+
+
+/* ==========================
+      SCROLLBAR
+========================== */
+
+::-webkit-scrollbar{
+
+    width:10px;
+
+}
+
+::-webkit-scrollbar-thumb{
+
+    background:#CBD5E1;
+
+    border-radius:30px;
+
+}
+
+
+
+/* ==========================
+      MOBILE
+========================== */
+
+@media(max-width:991px){
+
+.section-header{
+
+text-align:center;
+
+}
+
+.resident-card{
+
+margin-bottom:20px;
+
+}
+
+.stat-number{
+
+font-size:1.8rem;
+
+}
+
+.navbar h3{
+
+font-size:1.3rem;
+
+}
+
+}
+
+
+
+/* ==========================
+      DARK MODE READY
+========================== */
+
+body.dark{
+
+background:#111827;
+
+color:#F3F4F6;
+
+}
+
+body.dark .resident-card{
+
+background:#1F2937;
+
+color:white;
+
+}
+
+body.dark .notes{
+
+background:#374151;
+
+color:white;
+
+}
+
+body.dark .form-control{
+
+background:#1F2937;
+
+color:white;
+
+border-color:#374151;
+
+}
+
+body.dark .input-group-text{
+
+background:#1F2937;
+
+color:white;
+
+}
