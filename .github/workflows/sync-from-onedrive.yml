@@ -1,0 +1,40 @@
+name: Sync workbook from OneDrive
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"   # every 15 minutes (GitHub may run it a few minutes late)
+  workflow_dispatch:          # lets you run it by hand from the Actions tab
+
+permissions:
+  contents: write
+
+concurrency:
+  group: onedrive-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Download workbook from OneDrive
+        env:
+          ONEDRIVE_URL: ${{ secrets.ONEDRIVE_URL }}
+        run: python scripts/pull_from_onedrive.py
+
+      - name: Commit if the file changed
+        run: |
+          if git diff --quiet -- Client_Needs_Tracker_Finalexcel.xlsx; then
+            echo "No changes in OneDrive since the last sync."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add Client_Needs_Tracker_Finalexcel.xlsx
+          git commit -m "Auto-update from OneDrive ($(date -u '+%Y-%m-%d %H:%M UTC'))"
+          git push
