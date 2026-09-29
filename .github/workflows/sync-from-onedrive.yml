@@ -30,7 +30,7 @@ jobs:
       - name: Download workbook from OneDrive
         env:
           # Uses the ONEDRIVE_URL secret if one is set, otherwise this share link.
-          ONEDRIVE_URL: ${{ secrets.ONEDRIVE_URL || 'https://1drv.ms/x/c/f8f42b8cd3603fc5/IQDvf-yZ1kEWQ5UM2y1J4ubzAX0gnrCwkepuriV_pUY3RJk?e=oG2aUb' }}
+          ONEDRIVE_URL: ${{ secrets.ONEDRIVE_URL || 'https://1drv.ms/x/c/f8f42b8cd3603fc5/IQDvf-yZ1kEWQ5UM2y1J4ubzAQalHUXln_EKSY5nnqlmQtk?e=IO1A0c' }}
         run: python scripts/pull_from_onedrive.py
 
       - name: Commit if the file changed
