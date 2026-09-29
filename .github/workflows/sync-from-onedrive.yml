@@ -4,6 +4,11 @@ on:
   schedule:
     - cron: "*/15 * * * *"   # every 15 minutes (GitHub may run it a few minutes late)
   workflow_dispatch:          # lets you run it by hand from the Actions tab
+  push:                       # also run right away when the sync setup itself changes
+    branches: [main]
+    paths:
+      - ".github/workflows/sync-from-onedrive.yml"
+      - "scripts/pull_from_onedrive.py"
 
 permissions:
   contents: write
@@ -24,7 +29,8 @@ jobs:
 
       - name: Download workbook from OneDrive
         env:
-          ONEDRIVE_URL: ${{ secrets.ONEDRIVE_URL }}
+          # Uses the ONEDRIVE_URL secret if one is set, otherwise this share link.
+          ONEDRIVE_URL: ${{ secrets.ONEDRIVE_URL || 'https://1drv.ms/x/c/f8f42b8cd3603fc5/IQDvf-yZ1kEWQ5UM2y1J4ubzAX0gnrCwkepuriV_pUY3RJk?e=sPPVCd' }}
         run: python scripts/pull_from_onedrive.py
 
       - name: Commit if the file changed
