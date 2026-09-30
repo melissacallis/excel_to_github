@@ -66,14 +66,6 @@ function main(workbook: ExcelScript.Workbook) {
   // columns filled in by hand get a teal header
   ws.getRange("F4:L4").getFormat().getFill().setColor(teal);
 
-  // ---- Column widths (points) ----
-  const widths: [string, number][] = [
-    ["A", 72], ["B", 62], ["C", 62], ["D", 96], ["E", 96],
-    ["F", 118], ["G", 90], ["H", 84], ["I", 90], ["J", 200],
-    ["K", 128], ["L", 90], ["M", 250], ["N", 56], ["O", 90],
-  ];
-  widths.forEach(([col, w]) => ws.getRange(`${col}:${col}`).getFormat().setColumnWidth(w));
-
   // ---- Data rows ----
   const df = data.getFormat();
   df.getFont().setSize(11);
@@ -117,7 +109,7 @@ function main(workbook: ExcelScript.Workbook) {
     }
   }
 
-  data.getFormat().autofitRows();
+  fitToText(ws, lastRow);
 
   // ---- Color rules (update automatically as you type) ----
   const area = ws.getRange(`A5:O${endRow}`);
@@ -152,4 +144,27 @@ function addRule(ws: ExcelScript.Worksheet, address: string, formula: string,
   if (fill) custom.getFormat().getFill().setColor(fill);
   if (font) custom.getFormat().getFont().setColor(font);
   if (bold) custom.getFormat().getFont().setBold(true);
+}
+
+// Sizes columns to their text (Notes and Med Times wrap instead of growing forever),
+// then sizes rows to fit.
+function fitToText(ws: ExcelScript.Worksheet, lastRow: number) {
+  const data = ws.getRange(`A5:O${lastRow}`);
+  data.getFormat().setWrapText(false);
+  data.getFormat().autofitColumns();
+  "ABCDEFGHIJKLMNO".split("").forEach(col => {
+    const f = ws.getRange(`${col}:${col}`).getFormat();
+    const max = (col === "J" || col === "M") ? 300 : 200;
+    f.setColumnWidth(Math.min(Math.max(f.getColumnWidth() + 14, 64), max));
+  });
+  ws.getRange(`J5:J${lastRow}`).getFormat().setWrapText(true);
+  ws.getRange(`M5:M${lastRow}`).getFormat().setWrapText(true);
+  const header = ws.getRange("A4:O4").getFormat();
+  header.setWrapText(true);
+  header.setRowHeight(36);
+  data.getFormat().autofitRows();
+  for (let r = 5; r <= lastRow; r++) {
+    const f = ws.getRange(`A${r}:O${r}`).getFormat();
+    if (f.getRowHeight() < 22) f.setRowHeight(22);
+  }
 }
