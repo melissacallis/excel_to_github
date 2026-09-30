@@ -170,30 +170,31 @@ function fitToText(ws: ExcelScript.Worksheet, lastRow: number) {
   }
 }
 
-// Blue borders for male beds (M - ...), pink for female beds (F - ...),
-// with a thick colored edge on the left and a tinted Bed cell.
+// Light blue background for male beds (M - ...), light pink for female beds (F - ...).
+// Borders stay a neutral light grey.
 function colorBeds(ws: ExcelScript.Worksheet, lastRow: number) {
-  const male = { line: "#3B6FB6", tint: "#E6EEFA" };
-  const female = { line: "#C2407A", tint: "#FBE7F0" };
-  const beds = ws.getRange(`C5:C${lastRow}`).getTexts();
+  colorBedRows(ws, "C", "O", lastRow);
+}
+
+function colorBedRows(ws: ExcelScript.Worksheet, bedCol: string, lastCol: string, lastRow: number) {
+  const maleFill = "#DCE8F7";
+  const femaleFill = "#F9DDE8";
+  const line = "#D5DDE5";
+  const beds = ws.getRange(`${bedCol}5:${bedCol}${lastRow}`).getTexts();
   const sides = [ExcelScript.BorderIndex.edgeTop, ExcelScript.BorderIndex.edgeBottom,
-                 ExcelScript.BorderIndex.edgeRight, ExcelScript.BorderIndex.insideVertical];
+                 ExcelScript.BorderIndex.edgeLeft, ExcelScript.BorderIndex.edgeRight,
+                 ExcelScript.BorderIndex.insideVertical];
   beds.forEach((b, i) => {
     const bed = b[0].trim().toUpperCase();
-    const c = bed.startsWith("M") ? male : bed.startsWith("F") ? female : null;
-    if (!c) return;
-    const r = 5 + i;
-    const rowFmt = ws.getRange(`A${r}:O${r}`).getFormat();
+    const fill = /^M\s*-/.test(bed) ? maleFill : /^F\s*-/.test(bed) ? femaleFill : "";
+    if (!fill) return;
+    const rowFmt = ws.getRange(`A${5 + i}:${lastCol}${5 + i}`).getFormat();
+    rowFmt.getFill().setColor(fill);
     sides.forEach(side => {
       const border = rowFmt.getRangeBorder(side);
       border.setStyle(ExcelScript.BorderLineStyle.continuous);
-      border.setColor(c.line);
+      border.setColor(line);
       border.setWeight(ExcelScript.BorderWeight.thin);
     });
-    const left = ws.getRange(`A${r}`).getFormat().getRangeBorder(ExcelScript.BorderIndex.edgeLeft);
-    left.setStyle(ExcelScript.BorderLineStyle.continuous);
-    left.setColor(c.line);
-    left.setWeight(ExcelScript.BorderWeight.thick);
-    ws.getRange(`C${r}`).getFormat().getFill().setColor(c.tint);
   });
 }
