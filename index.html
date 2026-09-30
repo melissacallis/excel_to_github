@@ -603,8 +603,36 @@ const fileUrl = 'https://raw.githubusercontent.com/melissacallis/excel_to_github
 const SHEET_NAME = 'Client Status Board';
 const REFRESH_MS = 60 * 1000; // 60s auto-refresh
 
+// Written by Power Automate (via the "Update from Excel" GitHub Action). Used first when present.
+const jsonUrl = 'https://raw.githubusercontent.com/melissacallis/excel_to_github/main/data/client_status.json';
+
+async function fetchJsonRows() {
+  try {
+    const res = await fetch(jsonUrl + '?t=' + Date.now(), { cache: 'no-store' });
+    if (!res.ok) return null;
+    const rows = await res.json();
+    return Array.isArray(rows) ? rows : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function showLoaded() {
+  document.getElementById('dashboard').style.display = 'block';
+  document.getElementById('error-state').style.display = 'none';
+  document.getElementById('last-updated').innerHTML = '<span class="status-dot"></span>Updated ' + new Date().toLocaleTimeString();
+  renderClients();
+}
+
 async function fetchData() {
   try {
+    const jsonRows = await fetchJsonRows();
+    if (jsonRows) {
+      clients = jsonRows.filter(r => r['Member ID']); // drop blank rows
+      showLoaded();
+      return;
+    }
+    // Fallback: read the workbook directly.
     // cache-bust: raw.githubusercontent.com CDN-caches for ~5 min otherwise
     const bustUrl = fileUrl + (fileUrl.includes('?') ? '&' : '?') + 't=' + Date.now();
     const res = await fetch(bustUrl, { cache: 'no-store' });
@@ -616,11 +644,7 @@ async function fetchData() {
     // header row is row 4 in the sheet (0-indexed row 3), matches the workbook layout
     const json = XLSX.utils.sheet_to_json(sheet, { range: 3, defval: null, raw: false });
     clients = json.filter(r => r['Member ID']); // drop blank rows
-
-    document.getElementById('dashboard').style.display = 'block';
-    document.getElementById('error-state').style.display = 'none';
-    document.getElementById('last-updated').innerHTML = '<span class="status-dot"></span>Updated ' + new Date().toLocaleTimeString();
-    renderClients();
+    showLoaded();
   } catch (err) {
     showError('Error loading data: ' + err.message);
   }

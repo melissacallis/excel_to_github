@@ -1,0 +1,39 @@
+name: Update from Excel (Power Automate)
+
+# Power Automate sends the Client Status Board data here as a repository dispatch
+# event of type "excel-update". This saves it to data/client_status.json, which
+# index.html reads.
+on:
+  repository_dispatch:
+    types: [excel-update]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: excel-update
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Save client status data
+        env:
+          PAYLOAD: ${{ toJSON(github.event.client_payload) }}
+        run: python3 scripts/save_client_status.py
+
+      - name: Commit if the data changed
+        run: |
+          git add data/client_status.json
+          if git diff --cached --quiet; then
+            echo "No changes since the last update."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Auto-update from Excel via Power Automate ($(date -u '+%Y-%m-%d %H:%M UTC'))"
+          git pull --rebase origin main
+          git push
