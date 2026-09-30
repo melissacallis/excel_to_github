@@ -298,6 +298,7 @@ function rule(ws: ExcelScript.Worksheet, address: string, formula: string,
               fill: string, font: string, bold: boolean) {
   const cf = ws.getRange(address).addConditionalFormat(ExcelScript.ConditionalFormatType.custom);
   const custom = cf.getCustom();
+  if (!custom) return;
   custom.getRule().setFormula(formula);
   if (fill) custom.getFormat().getFill().setColor(fill);
   if (font) custom.getFormat().getFont().setColor(font);
