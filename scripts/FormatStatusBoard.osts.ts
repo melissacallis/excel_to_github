@@ -110,6 +110,7 @@ function main(workbook: ExcelScript.Workbook) {
   }
 
   fitToText(ws, lastRow);
+  colorBeds(ws, lastRow);
 
   // ---- Color rules (update automatically as you type) ----
   const area = ws.getRange(`A5:O${endRow}`);
@@ -167,4 +168,32 @@ function fitToText(ws: ExcelScript.Worksheet, lastRow: number) {
     const f = ws.getRange(`A${r}:O${r}`).getFormat();
     if (f.getRowHeight() < 22) f.setRowHeight(22);
   }
+}
+
+// Blue borders for male beds (M - ...), pink for female beds (F - ...),
+// with a thick colored edge on the left and a tinted Bed cell.
+function colorBeds(ws: ExcelScript.Worksheet, lastRow: number) {
+  const male = { line: "#3B6FB6", tint: "#E6EEFA" };
+  const female = { line: "#C2407A", tint: "#FBE7F0" };
+  const beds = ws.getRange(`C5:C${lastRow}`).getTexts();
+  const sides = [ExcelScript.BorderIndex.edgeTop, ExcelScript.BorderIndex.edgeBottom,
+                 ExcelScript.BorderIndex.edgeRight, ExcelScript.BorderIndex.insideVertical];
+  beds.forEach((b, i) => {
+    const bed = b[0].trim().toUpperCase();
+    const c = bed.startsWith("M") ? male : bed.startsWith("F") ? female : null;
+    if (!c) return;
+    const r = 5 + i;
+    const rowFmt = ws.getRange(`A${r}:O${r}`).getFormat();
+    sides.forEach(side => {
+      const border = rowFmt.getRangeBorder(side);
+      border.setStyle(ExcelScript.BorderLineStyle.continuous);
+      border.setColor(c.line);
+      border.setWeight(ExcelScript.BorderWeight.thin);
+    });
+    const left = ws.getRange(`A${r}`).getFormat().getRangeBorder(ExcelScript.BorderIndex.edgeLeft);
+    left.setStyle(ExcelScript.BorderLineStyle.continuous);
+    left.setColor(c.line);
+    left.setWeight(ExcelScript.BorderWeight.thick);
+    ws.getRange(`C${r}`).getFormat().getFill().setColor(c.tint);
+  });
 }
