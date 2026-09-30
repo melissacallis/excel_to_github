@@ -139,9 +139,9 @@ function main(workbook: ExcelScript.Workbook) {
   addRule(ws, `I5:I${endRow}`, '=AND($B5<>"",ISNUMBER(I5),I5=TODAY())', "#FDE4E4", "#9B1C1C", true);
   addRule(ws, `I5:I${endRow}`, '=AND($B5<>"",ISNUMBER(I5),I5>TODAY(),I5<=TODAY()+3)', "#FFF3D6", "#8A5A00", true);
 
-  // keep the title and headers (and Member ID / Initials / Bed) visible while scrolling
+  // keep the title and headers visible while scrolling
   ws.getFreezePanes().unfreeze();
-  ws.getFreezePanes().freezeAt(ws.getRange("A1:C4"));
+  ws.getFreezePanes().freezeRows(4);
 }
 
 function addRule(ws: ExcelScript.Worksheet, address: string, formula: string,
