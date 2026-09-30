@@ -4,7 +4,8 @@
 // Everything on the cards is a formula that reads the Client Status Board (and the
 // ✓/✗ needs on the Client Needs Tracker), so the cards update by themselves as you
 // type. Run this again only if you add or remove beds, or want to reset the layout.
-// WARNING: it clears the Card Dashboard sheet first.
+// It builds on its own sheet, "Card Dashboard (new)", so nothing else is touched.
+// If it stops with an error, the last "Step" line in the output shows where.
 
 const SB_HDR = "'Client Status Board'!$A$4:$Z$4";
 const SB_DATA = "'Client Status Board'!$A$5:$Z$300";
@@ -26,8 +27,11 @@ const CARD_STEP = 11;      // card + one spacer row
 function main(workbook: ExcelScript.Workbook) {
   const sb = workbook.getWorksheet("Client Status Board");
   if (!sb) throw new Error('Sheet "Client Status Board" not found.');
-  let ws = workbook.getWorksheet("Card Dashboard");
-  if (!ws) ws = workbook.addWorksheet("Card Dashboard");
+  const NEW_NAME = "Card Dashboard (new)";
+  const old = workbook.getWorksheet(NEW_NAME);
+  if (old) old.delete();
+  const ws = workbook.addWorksheet(NEW_NAME);
+  console.log("Step: sheet created");
 
   // count male / female beds on the status board
   const hdr = sb.getRange("A4:Z4").getTexts()[0].map(h => h.trim().toLowerCase());
@@ -39,15 +43,9 @@ function main(workbook: ExcelScript.Workbook) {
   const nCards = Math.max(nMale, nFemale, 1);
   const lastRow = FIRST_CARD_ROW + nCards * CARD_STEP;
 
-  // ---- reset the sheet ----
-  const all = ws.getRange("A1:Z400");
-  all.clearAllConditionalFormats();
-  all.unmerge();
-  all.clear(ExcelScript.ClearApplyTo.all);
   ws.setShowGridlines(false);
   ws.getRange(`A1:K${lastRow}`).getFormat().getFill().setColor(C.paper);
   ws.getRange(`A1:K${lastRow}`).getFormat().setVerticalAlignment(ExcelScript.VerticalAlignment.center);
-  ws.getRange(`A1:K${lastRow}`).getFormat().getFont().setName("Aptos");
 
   const widths: [string, number][] = [
     ["A", 12], ["B", 62], ["C", 112], ["D", 62], ["E", 124],
@@ -55,6 +53,7 @@ function main(workbook: ExcelScript.Workbook) {
   ];
   widths.forEach(([col, w]) => ws.getRange(`${col}:${col}`).getFormat().setColumnWidth(w));
 
+  console.log("Step: title");
   // ---- title ----
   ws.getRange("1:1").getFormat().setRowHeight(8);
   const title = ws.getRange("B2:J2");
@@ -73,6 +72,7 @@ function main(workbook: ExcelScript.Workbook) {
   sub.getFormat().setRowHeight(20);
   ws.getRange("4:4").getFormat().setRowHeight(8);
 
+  console.log("Step: tiles");
   // ---- summary tiles ----
   const chipCount = (t: string) =>
     `=COUNTIF($D$${FIRST_CARD_ROW}:$D$${lastRow},"${t}")+COUNTIF($I$${FIRST_CARD_ROW}:$I$${lastRow},"${t}")`;
@@ -97,6 +97,7 @@ function main(workbook: ExcelScript.Workbook) {
   ws.getRange("6:6").getFormat().setRowHeight(36);
   ws.getRange("7:7").getFormat().setRowHeight(12);
 
+  console.log("Step: section headers");
   // ---- section headers ----
   const maleHead = ws.getRange("B8:E8");
   maleHead.merge(false);
@@ -114,11 +115,12 @@ function main(workbook: ExcelScript.Workbook) {
   // ---- cards ----
   for (let k = 0; k < nCards; k++) {
     const top = FIRST_CARD_ROW + k * CARD_STEP;
-    if (k < nMale) buildCard(ws, true, k + 1, top);
-    if (k < nFemale) buildCard(ws, false, k + 1, top);
+    if (k < nMale) { console.log(`Step: male card ${k + 1}`); buildCard(ws, true, k + 1, top); }
+    if (k < nFemale) { console.log(`Step: female card ${k + 1}`); buildCard(ws, false, k + 1, top); }
     ws.getRange(`${top + CARD_ROWS}:${top + CARD_ROWS}`).getFormat().setRowHeight(12);
   }
 
+  console.log("Step: color rules");
   // ---- color rules (shared by all cards) ----
   const L = (col: string) => `${col}${FIRST_CARD_ROW}:${col}${lastRow}`;
   ["D", "I"].forEach(col => {                    // urgency chip in each card header
@@ -145,6 +147,7 @@ function main(workbook: ExcelScript.Workbook) {
 
   ws.activate();
   ws.getRange("A1").select();
+  console.log("Done! Check the \"Card Dashboard (new)\" sheet.");
 }
 
 // One card: 4 columns wide, 10 rows tall.
