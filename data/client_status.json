@@ -181,7 +181,7 @@
   "Appointment Date": null,
   "Notes": null,
   "Pharmacy Status": "Picked Up",
-  "Pharmacy": null,
+  "Pharmacy": "CVSA",
   "Med Times": null,
   "LOC": "LOC3",
   "Admit Date": "10/06/2025"
