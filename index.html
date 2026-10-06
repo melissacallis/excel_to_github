@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Patient Status &middot; Crisis Respite Program</title>
+<title>PCentral &middot; Patient Status</title>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Sora:wght@500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
   :root {
@@ -15,11 +15,13 @@
     --slate: #48605c;
     --muted: #5f716e;
     --line: #dfe6e2;
-    --paper: #f2f6f4;
+    --paper: #f3f5f9;
     --card: #ffffff;
-    --teal-deep: #0d3d33;
-    --teal: #12735c;
-    --teal-light: #e2f2ec;
+    /* PCentral brand: deep navy + sapphire, with a warm amber accent (names kept for compatibility) */
+    --teal-deep: #16234a;
+    --teal: #2d4a8a;
+    --teal-light: #e7ecf7;
+    --brand-accent: #f4a259;
     --sage: #9ec2b3;
     --male-bg: #dceaf6;
     --male-fg: #2c5f8a;
@@ -56,21 +58,35 @@
   button:focus-visible { outline: 3px solid var(--teal); outline-offset: 2px; }
   header button:focus-visible { outline-color: #ffffff; }
 
-  /* ---- Banner: Patient Status + bed census ---- */
+  /* ---- Banner: PCentral · Patient Status + bed census ---- */
   header {
-    background: var(--teal-deep);
+    position: relative;
+    background:
+      radial-gradient(ellipse 60% 120% at 8% -10%, rgba(92,128,214,0.55), transparent 60%),
+      radial-gradient(ellipse 50% 90% at 100% 0%, rgba(244,162,89,0.16), transparent 55%),
+      linear-gradient(160deg, #1d2d5c 0%, #16234a 55%, #101a38 100%);
     color: #fff;
-    padding: 22px 32px;
+    padding: 26px 40px 74px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     flex-wrap: wrap;
-    gap: 20px 32px;
-    box-shadow: var(--shadow);
+    gap: 22px 32px;
+    overflow: hidden;
   }
-  .brand { display: flex; flex-direction: column; gap: 6px; }
-  .brand .eyebrow { font-size: 12px; font-weight: 600; letter-spacing: 1.6px; text-transform: uppercase; color: rgba(255,255,255,0.88); }
-  .brand h1 { font-size: 32px; font-weight: 700; margin: 0; letter-spacing: -0.3px; line-height: 1.1; }
+  /* curved bottom edge */
+  .header-curve { position: absolute; left: 0; right: 0; bottom: -1px; width: 100%; height: 56px; display: block; pointer-events: none; }
+  .header-curve .shade { fill: rgba(255,255,255,0.07); }
+  .header-curve .edge { fill: var(--paper); }
+  header > :not(.header-curve) { position: relative; z-index: 1; }
+
+  .brand { display: flex; flex-direction: column; gap: 10px; }
+  .logo { display: flex; align-items: center; gap: 10px; }
+  .logo svg { width: 38px; height: 38px; flex-shrink: 0; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.25)); }
+  .wordmark { font-family: "Sora", "IBM Plex Sans", sans-serif; font-size: 22px; font-weight: 700; letter-spacing: -0.4px; line-height: 1; }
+  .wordmark span { color: var(--brand-accent); }
+  .brand h1 { font-family: "Sora", "IBM Plex Sans", sans-serif; font-size: 34px; font-weight: 600; margin: 0; letter-spacing: -0.8px; line-height: 1.1; }
+  .brand .eyebrow { font-size: 12px; font-weight: 500; letter-spacing: 1.4px; text-transform: uppercase; color: rgba(255,255,255,0.88); margin-top: -4px; }
   .header-meta { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
   header .meta { font-family: "IBM Plex Mono", monospace; font-size: 13px; color: rgba(255,255,255,0.9); font-variant-numeric: tabular-nums; display: inline-flex; align-items: center; }
   .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #6fd3a0; display: inline-block; margin-right: 6px; flex-shrink: 0; }
@@ -80,7 +96,12 @@
   }
   button.icon-btn:hover { background: rgba(255,255,255,0.12); }
 
-  .census { background: rgba(255,255,255,0.08); border-radius: 14px; padding: 14px 18px; display: flex; flex-direction: column; gap: 9px; }
+  .census {
+    background: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.05));
+    border: 1px solid rgba(255,255,255,0.14); border-radius: 18px; padding: 16px 20px;
+    display: flex; flex-direction: column; gap: 9px;
+    box-shadow: 0 12px 30px rgba(5,10,30,0.35), inset 0 1px 0 rgba(255,255,255,0.12);
+  }
   .census-head { display: flex; justify-content: space-between; align-items: baseline; gap: 24px; }
   .census-title { font-size: 12px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; color: rgba(255,255,255,0.88); }
   .census-total { font-size: 14px; font-weight: 600; }
@@ -268,8 +289,9 @@
     .summary-bar { grid-template-columns: repeat(2, 1fr); }
     .board-columns { grid-template-columns: 1fr; }
     .legend { margin-left: 0; }
-    header { padding: 18px 16px; }
-    .brand h1 { font-size: 26px; }
+    header { padding: 20px 16px 56px; }
+    .brand h1 { font-size: 28px; }
+    .header-curve { height: 36px; }
     .census { width: 100%; }
     .bed-chip { width: 34px; }
     .census-label { width: 100%; }
@@ -280,8 +302,23 @@
 
 <header>
   <div class="brand">
-    <div class="eyebrow">Crisis Respite Program</div>
+    <div class="logo">
+      <!-- PCentral mark: a "P" whose bowl circles a central point -->
+      <svg viewBox="0 0 40 40" aria-hidden="true">
+        <defs>
+          <linearGradient id="pc-g" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#ffffff"/>
+            <stop offset="1" stop-color="#cfdaf5"/>
+          </linearGradient>
+        </defs>
+        <rect x="1" y="1" width="38" height="38" rx="11" fill="url(#pc-g)"/>
+        <path d="M13 31V10h8.5a7.5 7.5 0 0 1 0 15H13" fill="none" stroke="#16234a" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="21" cy="17.5" r="2.6" fill="#f4a259"/>
+      </svg>
+      <span class="wordmark">P<span>Central</span></span>
+    </div>
     <h1>Patient Status</h1>
+    <div class="eyebrow">Crisis Respite Program</div>
     <div class="header-meta">
       <span class="meta" id="last-updated"><span class="status-dot" aria-hidden="true"></span>Connecting...</span>
       <button type="button" class="icon-btn" onclick="refreshNow()">Refresh</button>
@@ -296,6 +333,10 @@
     <div class="census-row" id="census-female"><span class="census-label">Women</span></div>
     <div class="census-key">Filled = in use · dashed = open</div>
   </section>
+  <svg class="header-curve" viewBox="0 0 1440 56" preserveAspectRatio="none" aria-hidden="true">
+    <path class="shade" d="M0,22 C360,58 1080,58 1440,10 L1440,56 L0,56 Z"/>
+    <path class="edge" d="M0,34 C360,64 1080,64 1440,24 L1440,56 L0,56 Z"/>
+  </svg>
 </header>
 <div class="visually-hidden" aria-live="polite" id="sr-announce"></div>
 
