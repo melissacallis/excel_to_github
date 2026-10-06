@@ -66,7 +66,7 @@
       radial-gradient(ellipse 50% 90% at 100% 0%, rgba(244,162,89,0.16), transparent 55%),
       linear-gradient(160deg, #1d2d5c 0%, #16234a 55%, #101a38 100%);
     color: #fff;
-    padding: 26px 40px 74px;
+    padding: 26px 40px 84px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -75,9 +75,13 @@
     overflow: hidden;
   }
   /* curved bottom edge */
-  .header-curve { position: absolute; left: 0; right: 0; bottom: -1px; width: 100%; height: 56px; display: block; pointer-events: none; }
+  .header-curve { position: absolute; left: 0; right: 0; bottom: -1px; width: 100%; height: 66px; display: block; pointer-events: none; }
   .header-curve .shade { fill: rgba(255,255,255,0.07); }
   .header-curve .edge { fill: var(--paper); }
+  /* 3D rim: a soft highlight just above the edge and a thin blue line just below it */
+  .header-curve .glint { fill: none; stroke: rgba(255,255,255,0.22); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+  .header-curve .rim { fill: none; stroke: #9fb0d9; stroke-width: 2; vector-effect: non-scaling-stroke; }
+  .header-curve .rim-shadow { fill: none; stroke: rgba(22,35,74,0.10); stroke-width: 6; vector-effect: non-scaling-stroke; }
   header > :not(.header-curve) { position: relative; z-index: 1; }
 
   .brand { display: flex; flex-direction: column; gap: 10px; }
@@ -289,9 +293,9 @@
     .summary-bar { grid-template-columns: repeat(2, 1fr); }
     .board-columns { grid-template-columns: 1fr; }
     .legend { margin-left: 0; }
-    header { padding: 20px 16px 56px; }
+    header { padding: 20px 16px 62px; }
     .brand h1 { font-size: 28px; }
-    .header-curve { height: 36px; }
+    .header-curve { height: 44px; }
     .census { width: 100%; }
     .bed-chip { width: 34px; }
     .census-label { width: 100%; }
@@ -333,9 +337,12 @@
     <div class="census-row" id="census-female"><span class="census-label">Women</span></div>
     <div class="census-key">Filled = in use · dashed = open</div>
   </section>
-  <svg class="header-curve" viewBox="0 0 1440 56" preserveAspectRatio="none" aria-hidden="true">
-    <path class="shade" d="M0,22 C360,58 1080,58 1440,10 L1440,56 L0,56 Z"/>
-    <path class="edge" d="M0,34 C360,64 1080,64 1440,24 L1440,56 L0,56 Z"/>
+  <svg class="header-curve" viewBox="0 0 1440 66" preserveAspectRatio="none" aria-hidden="true">
+    <path class="shade" d="M0,22 C360,58 1080,58 1440,10 L1440,66 L0,66 Z"/>
+    <path class="glint" d="M0,31 C360,61 1080,61 1440,21"/>
+    <path class="edge" d="M0,34 C360,64 1080,64 1440,24 L1440,66 L0,66 Z"/>
+    <path class="rim-shadow" d="M0,39 C360,69 1080,69 1440,29"/>
+    <path class="rim" d="M0,38 C360,68 1080,68 1440,28"/>
   </svg>
 </header>
 <div class="visually-hidden" aria-live="polite" id="sr-announce"></div>
