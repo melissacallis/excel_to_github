@@ -3,23 +3,25 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Respite Program &middot; Client Status Board</title>
+<title>PCentral &middot; Patient Status</title>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Sora:wght@500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
   :root {
     --ink: #1c2b29;
     --slate: #48605c;
-    --muted: #7c8d8a;
+    --muted: #5f716e;
     --line: #dfe6e2;
-    --paper: #f2f6f4;
+    --paper: #f3f5f9;
     --card: #ffffff;
-    --teal-deep: #0d3d33;
-    --teal: #12735c;
-    --teal-light: #e2f2ec;
+    /* PCentral brand: deep navy + sapphire, with a warm amber accent (names kept for compatibility) */
+    --teal-deep: #16234a;
+    --teal: #2d4a8a;
+    --teal-light: #e7ecf7;
+    --brand-accent: #f4a259;
     --sage: #9ec2b3;
     --male-bg: #dceaf6;
     --male-fg: #2c5f8a;
@@ -42,40 +44,77 @@
   * { box-sizing: border-box; }
   body {
     margin: 0;
-    font-family: "Inter", "Segoe UI", -apple-system, Helvetica, Arial, sans-serif;
+    font-family: "IBM Plex Sans", "Segoe UI", -apple-system, Helvetica, Arial, sans-serif;
     background: var(--paper);
     color: var(--ink);
     -webkit-font-smoothing: antialiased;
   }
+  .visually-hidden {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+  }
+
+  /* ---- Keyboard focus: always visible ---- */
+  button:focus-visible { outline: 3px solid var(--teal); outline-offset: 2px; }
+  header button:focus-visible { outline-color: #ffffff; }
+
+  /* ---- Banner: PCentral · Patient Status + bed census ---- */
   header {
-    background: linear-gradient(135deg, var(--teal-deep), var(--teal));
+    position: relative;
+    background:
+      radial-gradient(ellipse 60% 120% at 8% -10%, rgba(92,128,214,0.55), transparent 60%),
+      radial-gradient(ellipse 50% 90% at 100% 0%, rgba(244,162,89,0.16), transparent 55%),
+      linear-gradient(160deg, #1d2d5c 0%, #16234a 55%, #101a38 100%);
     color: #fff;
-    padding: 22px 32px;
+    padding: 26px 40px 74px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     flex-wrap: wrap;
-    gap: 14px;
-    box-shadow: var(--shadow);
+    gap: 22px 32px;
+    overflow: hidden;
   }
-  .brand { display: flex; align-items: center; gap: 12px; }
-  .brand-mark {
-    width: 38px; height: 38px; border-radius: 10px;
-    background: rgba(255,255,255,0.16);
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0;
-  }
-  .brand-mark svg { width: 20px; height: 20px; }
-  .brand-text h1 { font-size: 18px; font-weight: 600; margin: 0; letter-spacing: 0.2px; }
-  .brand-text .sub { font-size: 11.5px; color: rgba(255,255,255,0.72); margin-top: 1px; }
-  header .meta { font-size: 12px; color: rgba(255,255,255,0.78); font-variant-numeric: tabular-nums; }
-  .header-right { display: flex; align-items: center; gap: 14px; }
-  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #6fd3a0; display: inline-block; margin-right: 6px; }
+  /* curved bottom edge */
+  .header-curve { position: absolute; left: 0; right: 0; bottom: -1px; width: 100%; height: 56px; display: block; pointer-events: none; }
+  .header-curve .shade { fill: rgba(255,255,255,0.07); }
+  .header-curve .edge { fill: var(--paper); }
+  header > :not(.header-curve) { position: relative; z-index: 1; }
+
+  .brand { display: flex; flex-direction: column; gap: 10px; }
+  .logo { display: flex; align-items: center; gap: 10px; }
+  .logo svg { width: 38px; height: 38px; flex-shrink: 0; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.25)); }
+  .wordmark { font-family: "Sora", "IBM Plex Sans", sans-serif; font-size: 22px; font-weight: 700; letter-spacing: -0.4px; line-height: 1; }
+  .wordmark span { color: var(--brand-accent); }
+  .brand h1 { font-family: "Sora", "IBM Plex Sans", sans-serif; font-size: 34px; font-weight: 600; margin: 0; letter-spacing: -0.8px; line-height: 1.1; }
+  .brand .eyebrow { font-size: 12px; font-weight: 500; letter-spacing: 1.4px; text-transform: uppercase; color: rgba(255,255,255,0.88); margin-top: -4px; }
+  .header-meta { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  header .meta { font-family: "IBM Plex Mono", monospace; font-size: 13px; color: rgba(255,255,255,0.9); font-variant-numeric: tabular-nums; display: inline-flex; align-items: center; }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #6fd3a0; display: inline-block; margin-right: 6px; flex-shrink: 0; }
   button.icon-btn {
-    background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3);
-    color: #fff; border-radius: 7px; padding: 7px 14px; font-size: 12.5px; cursor: pointer;
+    background: transparent; border: 1px solid rgba(255,255,255,0.5);
+    color: #fff; border-radius: 8px; padding: 0 16px; min-height: 44px; font-size: 13px; cursor: pointer;
   }
-  button.icon-btn:hover { background: rgba(255,255,255,0.2); }
+  button.icon-btn:hover { background: rgba(255,255,255,0.12); }
+
+  .census {
+    background: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.05));
+    border: 1px solid rgba(255,255,255,0.14); border-radius: 18px; padding: 16px 20px;
+    display: flex; flex-direction: column; gap: 9px;
+    box-shadow: 0 12px 30px rgba(5,10,30,0.35), inset 0 1px 0 rgba(255,255,255,0.12);
+  }
+  .census-head { display: flex; justify-content: space-between; align-items: baseline; gap: 24px; }
+  .census-title { font-size: 12px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; color: rgba(255,255,255,0.88); }
+  .census-total { font-size: 14px; font-weight: 600; }
+  .census-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .census-label { width: 56px; font-size: 12px; color: rgba(255,255,255,0.88); }
+  .bed-chip {
+    width: 40px; height: 28px; border-radius: 6px; font-family: "IBM Plex Mono", monospace;
+    font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center;
+  }
+  .bed-chip.male { background: var(--male-bg); color: var(--male-fg); }
+  .bed-chip.female { background: var(--female-bg); color: var(--female-fg); }
+  .bed-chip.open { border: 1px dashed rgba(255,255,255,0.55); color: rgba(255,255,255,0.8); font-weight: 500; }
+  .census-key { font-size: 11px; color: rgba(255,255,255,0.8); }
 
   main { max-width: 1080px; margin: 0 auto; padding: 26px 20px 60px; }
 
@@ -110,19 +149,21 @@
 
   .filter-row { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; align-items: center; }
   .filter-btn {
-    border: 1px solid var(--line); background: var(--card); border-radius: 20px;
-    padding: 7px 15px; font-size: 12.5px; cursor: pointer; color: var(--slate);
+    border: 1px solid #8a9b97; background: var(--card); border-radius: 22px;
+    padding: 0 18px; min-height: 44px; font-size: 13.5px; cursor: pointer; color: var(--slate);
   }
   .filter-btn.active { background: var(--teal-deep); color: #fff; border-color: var(--teal-deep); }
 
-  .legend { display: flex; gap: 16px; margin-left: auto; align-items: center; font-size: 11.5px; color: var(--muted); }
+  .legend { display: flex; gap: 16px; margin-left: auto; align-items: center; font-size: 12px; color: var(--muted); }
   .legend-dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; margin-right: 5px; vertical-align: -1px; }
+  .legend-dot.male { background: var(--male-fg); }
+  .legend-dot.female { background: var(--female-fg); }
 
-  .board-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .board-columns { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; }
   .board-column-header {
     display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700;
     color: var(--slate); text-transform: uppercase; letter-spacing: 0.4px;
-    margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid var(--line);
+    margin: 0 0 12px; padding-bottom: 8px; border-bottom: 2px solid var(--line);
   }
   .board-column-header .dot { width: 10px; height: 10px; border-radius: 50%; }
   .board-column-header.male .dot { background: var(--male-fg); }
@@ -130,16 +171,26 @@
 
   .client-list { display: flex; flex-direction: column; gap: 7px; }
 
-  .client-card.empty-bed { opacity: 0.55; justify-content: center; grid-template-columns: 44px 1fr; }
-  .client-card.empty-bed .field-value { color: var(--muted); font-style: italic; }
+  .open-beds {
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+    padding: 10px 14px; border: 1px dashed #b9c6c2; border-radius: 9px; background: transparent;
+    font-size: 13px; color: var(--muted);
+  }
+  .open-beds strong { color: var(--slate); margin-right: 4px; }
+  .open-bed { font-family: "IBM Plex Mono", monospace; font-size: 12px; font-weight: 600; padding: 3px 8px; border-radius: 6px; background: #e6ece9; color: var(--slate); }
+
+  /* ---- Status row: what this patient needs, at a glance ---- */
+  .status-row { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding-bottom: 8px; margin-bottom: 2px; border-bottom: 1px solid var(--line); }
+  .status-reason { font-size: 13px; color: var(--slate); }
+  .status-ref { margin-left: auto; font-size: 12px; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; }
 
   .client-card {
     background: var(--card); border: 1px solid var(--line); border-left: 6px solid var(--line);
     border-radius: 9px; padding: 9px 14px; display: grid;
     grid-template-columns: 40px 1.3fr 1.3fr 1.3fr 1fr; gap: 10px; align-items: start; box-shadow: var(--shadow);
   }
-  .client-card.gender-male { border-left-color: #8f74c9; }
-  .client-card.gender-female { border-left-color: #e0952f; }
+  .client-card.gender-male { border-left-color: var(--male-fg); }
+  .client-card.gender-female { border-left-color: var(--female-fg); }
   .client-card.gender-unknown { border-left-color: var(--line); }
 
   @keyframes med-flash {
@@ -147,6 +198,9 @@
     50% { box-shadow: 0 0 0 3px rgba(226,59,59,0.35), var(--shadow); }
   }
   .client-card.med-due { animation: med-flash 1s ease-in-out infinite; }
+  @media (prefers-reduced-motion: reduce) {
+    .client-card.med-due, .blinking { animation: none; }
+  }
 
   .avatar {
     width: 36px; height: 36px; border-radius: 50%; display: flex;
@@ -157,23 +211,23 @@
   .avatar.female { background: var(--female-bg); color: var(--female-fg); }
   .avatar.unknown { background: var(--teal-light); color: var(--teal); }
 
-  .field-label { font-size: 9.5px; color: var(--teal); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; font-weight: 700; padding-bottom: 4px; border-bottom: 1.5px solid var(--teal-light); }
+  .field-label { font-size: 11px; color: var(--teal); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; font-weight: 700; padding-bottom: 4px; border-bottom: 1.5px solid var(--teal-light); }
 
-  .client-card .cell { border-left: 1px solid var(--line); padding-left: 12px; align-self: stretch; }
+  .client-card .cell { border-left: 1px solid var(--line); padding-left: 12px; align-self: stretch; min-width: 0; }
   .appt-group { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0 2px; }
   .field-value { font-size: 14px; color: var(--ink); font-weight: 600; letter-spacing: -0.1px; }
   .field-value.big { font-size: 16px; font-weight: 800; margin-bottom: 5px; }
   .field-sub { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
 
-  .data-line { display: flex; align-items: baseline; gap: 6px; font-size: 11.5px; margin-top: 3px; line-height: 1.4; }
+  .data-line { display: flex; align-items: baseline; gap: 6px; font-size: 12.5px; margin-top: 3px; line-height: 1.4; min-width: 0; }
   .data-line .k {
-    font-family: "IBM Plex Mono", monospace; font-size: 9px; font-weight: 600; color: var(--muted);
+    font-family: "IBM Plex Mono", monospace; font-size: 11px; font-weight: 600; color: var(--muted);
     text-transform: uppercase; letter-spacing: 0.5px; min-width: 30px; flex-shrink: 0;
   }
-  .data-line .v { color: var(--ink); font-weight: 500; }
-  .data-line .v.time-missing { color: var(--red); font-weight: 700; }
+  .data-line .v { color: var(--ink); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .data-line .v.time-missing { color: var(--red); font-weight: 700; white-space: normal; }
 
-  .badge { display: inline-block; font-size: 11px; font-weight: 700; padding: 4px 11px; border-radius: 20px; white-space: nowrap; }
+  .badge { display: inline-block; font-size: 12px; font-weight: 700; padding: 4px 11px; border-radius: 20px; white-space: nowrap; }
   .badge.red { background: var(--red-bg); color: var(--red); }
   .badge.amber { background: var(--amber-bg); color: var(--amber); }
   .badge.green { background: var(--green-bg); color: var(--green); }
@@ -181,7 +235,7 @@
 
   .flags { margin-top: 6px; }
 
-  .appt-badge { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 3px 9px; border-radius: 6px; margin-top: 4px; }
+  .appt-badge { display: inline-block; font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 6px; margin-top: 4px; }
   .appt-badge.doctor { background: var(--doctor-bg); color: var(--doctor-fg); }
   .appt-badge.casemgr { background: var(--casemgr-bg); color: var(--casemgr-fg); }
   .appt-badge.other { background: var(--other-bg); color: var(--other-fg); }
@@ -195,24 +249,23 @@
   }
   .notes-row .notes-label {
     font-style: normal; font-weight: 700; color: var(--muted);
-    text-transform: uppercase; font-size: 10px; letter-spacing: 0.4px; margin-right: 6px;
+    text-transform: uppercase; font-size: 11px; letter-spacing: 0.4px; margin-right: 6px;
   }
 
-  .status-chip { display: inline-block; font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: 6px; margin-top: 4px; }
+  /* One meaning per color: yellow = waiting, blue = scheduled/in progress, green = done, gray = other */
+  .status-chip { display: inline-block; max-width: 100%; white-space: normal; overflow-wrap: break-word; line-height: 1.3; font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 6px; margin-top: 4px; }
   .status-chip.chip-amber { background: var(--amber-bg); color: var(--amber); }
   .status-chip.chip-blue { background: var(--doctor-bg); color: var(--doctor-fg); }
   .status-chip.chip-green { background: var(--green-bg); color: var(--green); }
   .status-chip.chip-gray { background: #eef1f0; color: var(--muted); }
-  .status-chip.chip-requested { background: #2563eb; color: #ffffff; box-shadow: 0 0 0 2px rgba(37,99,235,0.25); }
-  .status-chip.chip-yellow { background: #ffe14d; color: #6b5200; }
+  .status-chip.chip-yellow { background: #ffe9a6; color: #6b5200; }
 
   .referral-tag {
-    margin-top: 6px; font-size: 11px; font-weight: 700;
-    letter-spacing: 0.3px;
+    font-size: 11px; font-weight: 600;
     background: var(--teal-light); color: var(--teal-deep);
-    padding: 5px 7px; border-radius: 6px;
-    display: block; text-align: center; line-height: 1.2;
-    word-break: break-word; white-space: normal;
+    padding: 2px 8px; border-radius: 6px;
+    display: inline-block; white-space: nowrap; max-width: 100%;
+    overflow: hidden; text-overflow: ellipsis; vertical-align: middle;
   }
 
   .med-banner { display: flex; align-items: center; gap: 8px; font-size: 12px; padding: 7px 12px; margin: 0; border-radius: 7px; }
@@ -222,11 +275,11 @@
     margin-top: 7px; min-width: 46px; padding: 5px 8px;
     background: var(--teal-light); border-radius: 8px; line-height: 1;
   }
-  .bed-days-square .bd-num { font-size: 17px; font-weight: 800; color: var(--teal-deep); }
-  .bed-days-square .bd-lbl { font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: var(--slate); margin-top: 2px; }
-  .bed-days-square.bed-days-high { background: #e9ddf7; }
-  .bed-days-square.bed-days-high .bd-num { color: #6a2fa8; }
-  .bed-days-square.bed-days-high .bd-lbl { color: #7d55b0; }
+  .bed-days-square .bd-num { font-size: 15px; font-weight: 700; color: var(--teal-deep); }
+  .bed-days-square .bd-lbl { white-space: nowrap; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: var(--slate); margin-top: 3px; }
+  .bed-days-square.bed-days-high { background: var(--amber-bg); }
+  .bed-days-square.bed-days-high .bd-num { color: var(--amber); }
+  .bed-days-square.bed-days-high .bd-lbl { color: var(--amber); }
 
   .empty-state, .error-state { text-align: center; padding: 60px 20px; color: var(--muted); font-size: 14px; }
   .error-state { color: var(--red); }
@@ -236,6 +289,12 @@
     .summary-bar { grid-template-columns: repeat(2, 1fr); }
     .board-columns { grid-template-columns: 1fr; }
     .legend { margin-left: 0; }
+    header { padding: 20px 16px 56px; }
+    .brand h1 { font-size: 28px; }
+    .header-curve { height: 36px; }
+    .census { width: 100%; }
+    .bed-chip { width: 34px; }
+    .census-label { width: 100%; }
   }
 </style>
 </head>
@@ -243,52 +302,74 @@
 
 <header>
   <div class="brand">
-    <div class="brand-mark">
-      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M12 21s-7-4.35-9.5-8.5C.5 8.5 2.5 5 6 5c2 0 3.3 1 4 2 .7-1 2-2 4-2 3.5 0 5.5 3.5 3.5 7.5C19 16.65 12 21 12 21z"/>
+    <div class="logo">
+      <!-- PCentral mark: a "P" whose bowl circles a central point -->
+      <svg viewBox="0 0 40 40" aria-hidden="true">
+        <defs>
+          <linearGradient id="pc-g" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#ffffff"/>
+            <stop offset="1" stop-color="#cfdaf5"/>
+          </linearGradient>
+        </defs>
+        <rect x="1" y="1" width="38" height="38" rx="11" fill="url(#pc-g)"/>
+        <path d="M13 31V10h8.5a7.5 7.5 0 0 1 0 15H13" fill="none" stroke="#16234a" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="21" cy="17.5" r="2.6" fill="#f4a259"/>
       </svg>
+      <span class="wordmark">P<span>Central</span></span>
     </div>
-    <div class="brand-text">
-      <h1>Crisis Respite Program</h1>
-      <div class="sub">Client Status Board</div>
+    <h1>Patient Status</h1>
+    <div class="eyebrow">Crisis Respite Program</div>
+    <div class="header-meta">
+      <span class="meta" id="last-updated"><span class="status-dot" aria-hidden="true"></span>Connecting...</span>
+      <button type="button" class="icon-btn" onclick="refreshNow()">Refresh</button>
     </div>
   </div>
-  <div class="header-right">
-    <span class="meta" id="last-updated"><span class="status-dot"></span>Connecting...</span>
-    <button class="icon-btn" onclick="refreshNow()">Refresh</button>
-  </div>
+  <section class="census" id="census" aria-label="Bed census" style="display:none;">
+    <div class="census-head">
+      <span class="census-title">Bed census</span>
+      <span class="census-total" id="census-total"></span>
+    </div>
+    <div class="census-row" id="census-male"><span class="census-label">Men</span></div>
+    <div class="census-row" id="census-female"><span class="census-label">Women</span></div>
+    <div class="census-key">Filled = in use · dashed = open</div>
+  </section>
+  <svg class="header-curve" viewBox="0 0 1440 56" preserveAspectRatio="none" aria-hidden="true">
+    <path class="shade" d="M0,22 C360,58 1080,58 1440,10 L1440,56 L0,56 Z"/>
+    <path class="edge" d="M0,34 C360,64 1080,64 1440,24 L1440,56 L0,56 Z"/>
+  </svg>
 </header>
+<div class="visually-hidden" aria-live="polite" id="sr-announce"></div>
 
 <main>
 
   <div id="dashboard" style="display:none;">
     <div class="summary-bar">
       <div class="summary-card red"><div class="num" id="count-red">0</div><div class="lbl">Needs action</div></div>
-      <div class="summary-card amber"><div class="num" id="count-amber">0</div><div class="lbl">Upcoming / watch</div></div>
+      <div class="summary-card amber"><div class="num" id="count-amber">0</div><div class="lbl">Upcoming</div></div>
       <div class="summary-card green"><div class="num" id="count-green">0</div><div class="lbl">On track</div></div>
-      <div class="summary-card teal"><div class="num" id="count-total">0</div><div class="lbl">Total clients</div></div>
+      <div class="summary-card teal"><div class="num" id="count-total">0</div><div class="lbl">Total patients</div></div>
     </div>
 
-    <div class="filter-row">
-      <button class="filter-btn active" data-filter="all" onclick="setFilter('all')">All</button>
-      <button class="filter-btn" data-filter="red" onclick="setFilter('red')">Needs action</button>
-      <button class="filter-btn" data-filter="amber" onclick="setFilter('amber')">Upcoming</button>
-      <button class="filter-btn" data-filter="green" onclick="setFilter('green')">On track</button>
-      <div class="legend">
-        <span><span class="legend-dot" style="background:#8f74c9;border:1px solid #6a4fa8;"></span>Male</span>
-        <span><span class="legend-dot" style="background:#e0952f;border:1px solid #b5741f;"></span>Female</span>
+    <div class="filter-row" role="group" aria-label="Filter patients by status">
+      <button type="button" class="filter-btn active" data-filter="all" aria-pressed="true" onclick="setFilter('all')">All</button>
+      <button type="button" class="filter-btn" data-filter="red" aria-pressed="false" onclick="setFilter('red')">Needs action</button>
+      <button type="button" class="filter-btn" data-filter="amber" aria-pressed="false" onclick="setFilter('amber')">Upcoming</button>
+      <button type="button" class="filter-btn" data-filter="green" aria-pressed="false" onclick="setFilter('green')">On track</button>
+      <div class="legend" aria-hidden="true">
+        <span><span class="legend-dot male"></span>Men</span>
+        <span><span class="legend-dot female"></span>Women</span>
       </div>
     </div>
 
     <div class="board-columns">
-      <div>
-        <div class="board-column-header male"><span class="dot"></span>Male</div>
+      <section aria-labelledby="col-male">
+        <h2 class="board-column-header male" id="col-male"><span class="dot" aria-hidden="true"></span>Men</h2>
         <div class="client-list" id="client-list-male"></div>
-      </div>
-      <div>
-        <div class="board-column-header female"><span class="dot"></span>Female</div>
+      </section>
+      <section aria-labelledby="col-female">
+        <h2 class="board-column-header female" id="col-female"><span class="dot" aria-hidden="true"></span>Women</h2>
         <div class="client-list" id="client-list-female"></div>
-      </div>
+      </section>
     </div>
     <div class="empty-state" id="empty-state" style="display:none;">No clients match this filter.</div>
   </div>
@@ -344,9 +425,19 @@ function apptTypeClass(apptWith) {
   return null;
 }
 
+// "8/12/2026" -> "Aug 12" (adds the year when it isn't this year). Leaves anything unparseable as-is.
+function fmtDate(raw) {
+  if (!raw) return '';
+  const d = new Date(raw);
+  if (isNaN(d)) return String(raw);
+  const opts = { month: 'short', day: 'numeric' };
+  if (d.getFullYear() !== new Date().getFullYear()) opts.year = 'numeric';
+  return d.toLocaleDateString('en-US', opts);
+}
+
 function apptStatusClass(status) {
   const v = (status || '').trim().toLowerCase();
-  if (v === 'requested') return 'chip-requested';
+  if (v === 'requested' || v.indexOf('pending') !== -1) return 'chip-yellow';
   if (v === 'scheduled') return 'chip-blue';
   if (v === 'completed') return 'chip-green';
   return 'chip-gray';
@@ -355,7 +446,7 @@ function apptStatusClass(status) {
 function pharmStatusClass(status) {
   const v = (status || '').trim().toLowerCase();
   if (v.indexOf('submitted') !== -1 || v.indexOf('pending') !== -1) return 'chip-yellow';
-  if (v === 'waiting scripts') return 'chip-amber';
+  if (v === 'waiting scripts') return 'chip-yellow';
   if (v === 'dropped off') return 'chip-blue';
   if (v === 'picked up') return 'chip-green';
   return 'chip-gray';
@@ -436,23 +527,28 @@ function evaluateScripts(c) {
 function evaluateClient(c) {
   const apptDateRaw = c['Appointment Date'];
   let worst = 'green';
-  function escalate(level) {
+  const reasons = [];
+  function escalate(level, why) {
     if (level === 'red') worst = 'red';
     else if (level === 'amber' && worst !== 'red') worst = 'amber';
+    if (why) reasons.push({ level, why });
   }
   if (!apptDateRaw) {
-    escalate('red');
+    escalate('red', 'No appointment date');
   } else {
     const until = daysUntil(apptDateRaw);
     if (until !== null) {
-      if (until < 0) escalate('red');
-      else if (until <= APPT_SOON_DAYS) escalate('amber');
+      if (until < 0) escalate('red', 'Appointment date passed (' + fmtDate(apptDateRaw) + ')');
+      else if (until === 0) escalate('amber', 'Appointment today');
+      else if (until <= APPT_SOON_DAYS) escalate('amber', 'Appointment in ' + until + ' day' + (until === 1 ? '' : 's'));
     }
   }
   const scripts = evaluateScripts(c);
-  if (scripts.level === 'red') escalate('red');
-  else if (scripts.level === 'amber') escalate('amber');
-  return { urgency: worst, scripts };
+  if (scripts.level === 'red') escalate('red', scripts.label);
+  else if (scripts.level === 'amber') escalate('amber', scripts.label);
+  // red reasons first
+  reasons.sort((a, b) => (a.level === 'red' ? 0 : 1) - (b.level === 'red' ? 0 : 1));
+  return { urgency: worst, scripts, reasons: reasons.map(r => r.why) };
 }
 
 function buildCardHtml(c, ev) {
@@ -471,7 +567,7 @@ function buildCardHtml(c, ev) {
   card.className = `client-card gender-${gender} urgent-${ev.urgency}`;
 
   const apptStatus = (c['Appointment Status'] || '').trim();
-  const apptStatusHtml = apptStatus ? `<span class="status-chip ${apptStatusClass(apptStatus)}">${apptStatus}</span>` : '';
+  const apptStatusHtml = apptStatus ? `<span class="status-chip ${apptStatusClass(apptStatus)}">${breakAtSlash(apptStatus)}</span>` : '';
 
   const apptTime = (c['Appointment Time'] || '').trim();
   const isScheduled = apptStatus.toLowerCase() === 'scheduled';
@@ -486,35 +582,42 @@ function buildCardHtml(c, ev) {
   }
 
   const pharmStatus = (c['Pharmacy Status'] || '').trim();
-  const pharmStatusHtml = pharmStatus ? `<span class="status-chip ${pharmStatusClass(pharmStatus)}">${pharmStatus}</span>` : '';
+  const pharmStatusHtml = pharmStatus ? `<span class="status-chip ${pharmStatusClass(pharmStatus)}">${breakAtSlash(pharmStatus)}</span>` : '';
 
-  const clockIcon = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="M5 3 2 6"/><path d="m22 6-3-3"/><path d="M6.38 18.7 4 21"/><path d="M17.64 18.67 20 21"/></svg>';
+  const clockIcon = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="M5 3 2 6"/><path d="m22 6-3-3"/><path d="M6.38 18.7 4 21"/><path d="M17.64 18.67 20 21"/></svg>';
   let medTimesHtml = '';
   if (medTimes && mStatus === 'due') {
-    medTimesHtml = `<div class="alert alert-success med-banner" role="alert">${clockIcon}<span><strong>MEDS DUE NOW</strong> \u2014 ${medTimes}</span></div>`;
+    medTimesHtml = `<div class="alert alert-success med-banner">${clockIcon}<span><strong>MEDS DUE NOW</strong> \u2014 ${medTimes}</span></div>`;
   } else if (medTimes) {
-    medTimesHtml = `<div class="alert alert-info med-banner" role="alert">${clockIcon}<span><strong>Med Times:</strong> ${medTimes}</span></div>`;
+    medTimesHtml = `<div class="alert alert-info med-banner">${clockIcon}<span><strong>Med Times:</strong> ${medTimes}</span></div>`;
   }
 
   const referral = (c['Referral source'] || '').trim();
-  const referralHtml = referral ? `<div class="referral-tag" title="Referred from ${referral}">${referral}</div>` : '';
+  const referralHtml = referral ? `<span class="referral-tag" title="Referred from ${referral}">${referral}</span>` : '';
+
+  const statusLabel = { red: 'Needs action', amber: 'Upcoming', green: 'On track' }[ev.urgency];
+  const reasonText = ev.reasons.length ? ev.reasons.join(' \u00b7 ') : 'Nothing due';
 
   card.innerHTML = `
+    <div class="status-row">
+      <span class="badge ${ev.urgency}">${statusLabel}</span>
+      <span class="status-reason">${reasonText}</span>
+      ${referralHtml ? `<span class="status-ref">Referred by ${referralHtml}</span>` : ''}
+    </div>
     <div class="avatar-col">
       <div class="avatar ${gender}">${initials(c['Client Initials'])}</div>
-      ${referralHtml}
     </div>
     <div class="cell">
-      <div class="field-label">Client</div>
+      <div class="field-label">Patient</div>
       <div class="field-value big">${c['Bed'] || '\u2014'}</div>
       <div class="data-line"><span class="k">ID</span><span class="v">${c['Member ID'] || '\u2014'}</span></div>
       <div class="data-line"><span class="k">LOC</span><span class="v">${c['LOC'] || '\u2014'}</span></div>
-      <div class="data-line"><span class="k">CM</span><span class="v">${c['Case Manager'] || '\u2014'}</span></div>
+      <div class="data-line"><span class="k">CM</span><span class="v" title="${c['Case Manager'] || ''}">${c['Case Manager'] || '\u2014'}</span></div>
     </div>
     <div class="cell">
       <div class="field-label">Appointment</div>
       <div class="appt-group">${apptBadgeHtml}${apptStatusHtml}</div>
-      <div class="data-line"><span class="k">Date</span><span class="v">${c['Appointment Date'] || '\u2014'}</span></div>
+      <div class="data-line"><span class="k">Date</span><span class="v">${fmtDate(c['Appointment Date']) || '\u2014'}</span></div>
       ${timeLineHtml}
     </div>
     <div class="cell">
@@ -526,7 +629,7 @@ function buildCardHtml(c, ev) {
     </div>
     <div class="cell">
       <div class="field-label">Admitted</div>
-      <div class="field-value">${c['Admit Date'] || '\u2014'}</div>
+      <div class="field-value">${fmtDate(c['Admit Date']) || '\u2014'}</div>
       ${(() => {
         const bd = bedDays(c['Admit Date']);
         if (bd === null) return '';
@@ -543,17 +646,57 @@ function buildCardHtml(c, ev) {
   return card;
 }
 
-function buildEmptyBedCard(bedLabel) {
-  const card = document.createElement('div');
-  card.className = 'client-card empty-bed';
-  card.innerHTML = `
-    <div class="avatar unknown">\u2014</div>
-    <div>
-      <div class="field-label">Bed</div>
-      <div class="field-value">${bedLabel} \u2014 Open</div>
-    </div>
-  `;
-  return card;
+// Let long chip labels like "Submitted/Pending" wrap after the slash instead of mid-word.
+function breakAtSlash(t) { return String(t).replace(/\//g, '/\u200b'); }
+
+// "M - 2B" -> "2B"
+function shortBed(bed) {
+  return String(bed || '').replace(/^\s*[MF]\s*-\s*/i, '').trim() || '?';
+}
+
+// One compact line listing every open bed in a column.
+function buildOpenBedsLine(rows) {
+  const line = document.createElement('div');
+  line.className = 'open-beds';
+  const chips = rows.map(r => `<span class="open-bed">${shortBed(r.raw['Bed'])}</span>`).join('');
+  line.innerHTML = `<strong>Open beds (${rows.length})</strong>${chips}`;
+  return line;
+}
+
+// Banner bed chart: every bed, filled when in use, dashed when open.
+function renderCensus(evaluated) {
+  const census = document.getElementById('census');
+  if (!evaluated.length) { census.style.display = 'none'; return; }
+  census.style.display = 'flex';
+  const bedSort = (a, b) => (a.raw['Bed'] || '').localeCompare(b.raw['Bed'] || '', undefined, { numeric: true });
+  let used = 0;
+  ['male', 'female'].forEach(g => {
+    const row = document.getElementById('census-' + g);
+    row.querySelectorAll('.bed-chip').forEach(el => el.remove());
+    evaluated.filter(e => e.gender === g).sort(bedSort).forEach(e => {
+      const inUse = !!(e.raw['Client Initials'] || '').trim();
+      if (inUse) used++;
+      const chip = document.createElement('span');
+      chip.className = 'bed-chip ' + (inUse ? g : 'open');
+      chip.textContent = shortBed(e.raw['Bed']);
+      chip.title = (e.raw['Bed'] || '') + (inUse ? ' \u2014 in use' : ' \u2014 open');
+      row.appendChild(chip);
+    });
+  });
+  document.getElementById('census-total').textContent = used + ' of ' + evaluated.length + ' beds in use';
+}
+
+// Tell screen readers (once) when a bed's meds become due, instead of re-reading every card each minute.
+let lastDueBeds = '';
+function announceMedsDue(evaluated) {
+  const due = evaluated
+    .filter(e => (e.raw['Client Initials'] || '').trim() && medStatus((e.raw['Med Times'] || '').trim()) === 'due')
+    .map(e => e.raw['Bed']);
+  const key = due.join('|');
+  if (key && key !== lastDueBeds) {
+    document.getElementById('sr-announce').textContent = 'Meds due now: ' + due.join(', ');
+  }
+  lastDueBeds = key;
 }
 
 function renderClients() {
@@ -572,29 +715,31 @@ function renderClients() {
   document.getElementById('count-green').textContent = counts.green;
   document.getElementById('count-total').textContent = evaluated.filter(e => (e.raw['Client Initials'] || '').trim()).length;
 
-  const filtered = currentFilter === 'all'
-    ? evaluated
-    : evaluated.filter(e => (e.raw['Client Initials'] || '').trim() ? e.eval.urgency === currentFilter : true);
+  renderCensus(evaluated);
+  announceMedsDue(evaluated);
 
+  const occupied = e => !!(e.raw['Client Initials'] || '').trim();
   const bedSort = (a, b) => (a.raw['Bed'] || '').localeCompare(b.raw['Bed'] || '', undefined, { numeric: true });
-  const maleRows = filtered.filter(e => e.gender === 'male').sort(bedSort);
-  const femaleRows = filtered.filter(e => e.gender === 'female').sort(bedSort);
+  const shown = e => occupied(e) && (currentFilter === 'all' || e.eval.urgency === currentFilter);
 
-  emptyState.style.display = (maleRows.length === 0 && femaleRows.length === 0 && currentFilter !== 'all') ? 'block' : 'none';
+  let shownCount = 0;
+  [['male', listMale], ['female', listFemale]].forEach(([g, list]) => {
+    const rows = evaluated.filter(e => e.gender === g).sort(bedSort);
+    rows.filter(shown).forEach(({ raw: c, eval: ev }) => { list.appendChild(buildCardHtml(c, ev)); shownCount++; });
+    const open = rows.filter(e => !occupied(e));
+    if (open.length && currentFilter === 'all') list.appendChild(buildOpenBedsLine(open));
+  });
 
-  maleRows.forEach(({ raw: c, eval: ev }) => {
-    const hasClient = (c['Client Initials'] || '').trim();
-    listMale.appendChild(hasClient ? buildCardHtml(c, ev) : buildEmptyBedCard(c['Bed'] || 'Unassigned'));
-  });
-  femaleRows.forEach(({ raw: c, eval: ev }) => {
-    const hasClient = (c['Client Initials'] || '').trim();
-    listFemale.appendChild(hasClient ? buildCardHtml(c, ev) : buildEmptyBedCard(c['Bed'] || 'Unassigned'));
-  });
+  emptyState.style.display = (shownCount === 0 && currentFilter !== 'all') ? 'block' : 'none';
 }
 
 function setFilter(f) {
   currentFilter = f;
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === f));
+  document.querySelectorAll('.filter-btn').forEach(b => {
+    const on = b.dataset.filter === f;
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
   renderClients();
 }
 
@@ -620,7 +765,7 @@ async function fetchJsonRows() {
 function showLoaded() {
   document.getElementById('dashboard').style.display = 'block';
   document.getElementById('error-state').style.display = 'none';
-  document.getElementById('last-updated').innerHTML = '<span class="status-dot"></span>Updated ' + new Date().toLocaleTimeString();
+  document.getElementById('last-updated').innerHTML = '<span class="status-dot" aria-hidden="true"></span>Updated ' + new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
   renderClients();
 }
 
