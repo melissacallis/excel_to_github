@@ -73,7 +73,8 @@
     gap: 22px 32px;
     overflow: hidden;
   }
-  header .census { justify-self: end; }
+  header .census { justify-self: center; }
+  header .clock { justify-self: end; align-items: flex-end; text-align: right; }
 
   /* ---- Big center clock (matches the Ugenda clock: Fraunces, light) ---- */
   .clock { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
@@ -84,7 +85,7 @@
   @media (max-width: 1180px) {
     header { grid-template-columns: 1fr auto; }
     header .clock { grid-column: 2; grid-row: 1; justify-self: end; }
-    header .census { grid-column: 1 / -1; justify-self: stretch; }
+    header .census { grid-column: 1 / -1; grid-row: 2; justify-self: stretch; }
   }
   /* curved bottom edge */
   .header-curve { position: absolute; left: 0; right: 0; bottom: -1px; width: 100%; height: 66px; display: block; pointer-events: none; }
@@ -306,7 +307,8 @@
     .board-columns { grid-template-columns: 1fr; }
     .legend { margin-left: 0; }
     header { padding: 20px 16px 62px; grid-template-columns: 1fr; }
-    header .clock { grid-column: 1; grid-row: auto; justify-self: start; align-items: flex-start; text-align: left; }
+    header .clock { grid-column: 1; grid-row: 2; justify-self: start; align-items: flex-start; text-align: left; }
+    header .census { grid-row: 3; }
     .clock-hm { font-size: 56px; }
     .brand h1 { font-size: 28px; }
     .header-curve { height: 44px; }
@@ -342,10 +344,6 @@
       <button type="button" class="icon-btn" onclick="refreshNow()">Refresh</button>
     </div>
   </div>
-  <div class="clock" aria-label="Current date and time">
-    <div class="clock-time"><span class="clock-hm" id="clock-hm">--:--</span><span class="clock-ampm" id="clock-ampm"></span></div>
-    <div class="clock-date" id="clock-date"></div>
-  </div>
   <section class="census" id="census" aria-label="Bed census" style="display:none;">
     <div class="census-head">
       <span class="census-title">Bed census</span>
@@ -355,6 +353,10 @@
     <div class="census-row" id="census-female"><span class="census-label">Women</span></div>
     <div class="census-key">Filled = in use · dashed = open</div>
   </section>
+  <div class="clock" aria-label="Current date and time">
+    <div class="clock-time"><span class="clock-hm" id="clock-hm">--:--</span><span class="clock-ampm" id="clock-ampm"></span></div>
+    <div class="clock-date" id="clock-date"></div>
+  </div>
   <svg class="header-curve" viewBox="0 0 1440 66" preserveAspectRatio="none" aria-hidden="true">
     <path class="shade" d="M0,22 C360,58 1080,58 1440,10 L1440,66 L0,66 Z"/>
     <path class="glint" d="M0,31 C360,61 1080,61 1440,21"/>
