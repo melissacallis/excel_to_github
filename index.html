@@ -307,6 +307,7 @@
     display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
     background: var(--card); border: 1px solid var(--line); border-radius: 14px;
     padding: 10px 14px; margin: -4px 0 18px; box-shadow: var(--shadow);
+    position: sticky; top: 8px; z-index: 5; /* stays in reach while scrolling down to a patient */
   }
   .tray-title { font-size: 12px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; color: var(--slate); margin-right: 4px; }
   .tray-hint { font-size: 12.5px; color: var(--muted); margin-left: auto; }
@@ -328,6 +329,18 @@
   .magnet .msub { font-weight: 500; opacity: .9; }
   .magnet.armed { outline: 3px solid var(--teal-deep); outline-offset: 2px; }
   .magnet[draggable="true"] { cursor: grab; }
+  /* Tray magnets look like a stack: there's always another one underneath */
+  #tray-magnets .magnet {
+    box-shadow:
+      0 2px 0 rgba(0,0,0,0.12),
+      3px 4px 0 -1px rgba(255,255,255,0.9), 3px 4px 0 0 rgba(0,0,0,0.10),
+      6px 8px 0 -2px rgba(255,255,255,0.9), 6px 8px 0 -1px rgba(0,0,0,0.08),
+      0 6px 14px rgba(16,26,56,0.12);
+    margin: 0 6px 8px 0;
+  }
+  @keyframes magnet-refill { 0% { transform: translateY(-10px) scale(.85); opacity: 0; } 70% { transform: translateY(1px) scale(1.04); opacity: 1; } 100% { transform: none; } }
+  #tray-magnets .magnet.refill { animation: magnet-refill .38s ease-out; }
+  @media (prefers-reduced-motion: reduce) { #tray-magnets .magnet.refill { animation: none; } }
 
   .m-offunit  { background: #cdeefb; color: #0b4f6c; }
   .m-reassess { background: #d9f2dc; color: #1d5124; }
@@ -381,6 +394,7 @@
     .board-columns { grid-template-columns: 1fr; }
     .legend { margin-left: 0; }
     .tray-hint { margin-left: 0; width: 100%; }
+    .magnet-tray { position: static; }
     .picker-grid { grid-template-columns: 1fr; }
     header { padding: 20px 16px 62px; grid-template-columns: 1fr; }
     header .clock { grid-column: 1; grid-row: 2; justify-self: start; align-items: flex-start; text-align: left; }
@@ -1138,7 +1152,16 @@ function placeMagnet(key, type) {
   if (existing !== -1) { openEditor(key, existing); return; } // one of each kind per patient
   list.push({ type, placedAt: new Date().toISOString(), time: now.time, date: now.date });
   saveMagnets(key, list);
+  refillTray(type);
   if (def.location) openEditor(key, list.length - 1, true);
+}
+
+// A fresh magnet "drops" back into the tray after one is used, so it's clear there are always more.
+function refillTray(type) {
+  const b = document.querySelector('#tray-magnets .magnet[data-type="' + type + '"]');
+  if (!b) return;
+  b.classList.remove('refill'); void b.offsetWidth; b.classList.add('refill');
+  setTimeout(() => b.classList.remove('refill'), 450);
 }
 
 function bedForKey(key) { return key.split('|')[0] || ''; }
@@ -1181,7 +1204,7 @@ function setArmed(type) {
   });
   document.getElementById('tray-hint').textContent = armedType
     ? 'Now tap a patient to place “' + MAGNET_TYPES[armedType].label + '”. Press Esc to cancel.'
-    : 'Drag a magnet onto a patient, or tap a magnet and then tap the patient.';
+    : 'Drag a magnet onto a patient, or tap a magnet and then tap the patient. The tray never runs out.';
 }
 
 function renderTray() {
