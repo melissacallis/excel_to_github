@@ -78,6 +78,7 @@
   .m-full     { background: #f9d6d6; color: #7a2121; }
   .m-prn      { background: #fde9a6; color: #5e4500; }
   .m-iop      { background: #dfe3fb; color: #2b3a8a; }
+  .m-med      { background: #e9edf5; color: #44506b; }
 
   .lock { max-width: 420px; margin: 40px auto; padding: 22px; }
   .lock h2 { font-family: "Sora", sans-serif; font-size: 18px; margin: 0 0 6px; }
@@ -150,6 +151,11 @@
           <option value="full">Full</option>
           <option value="prn">PRN</option>
           <option value="iop">IOP</option>
+          <option value="htn">High blood pressure</option>
+          <option value="hiv">HIV</option>
+          <option value="seizure">Seizures</option>
+          <option value="diabetes">Diabetes</option>
+          <option value="medother">Other medical</option>
         </select>
       </label>
       <label>Bed or patient<input type="search" id="q" placeholder="e.g. 2B or R.R."></label>
@@ -199,7 +205,12 @@ const TYPES = {
   pw:       { label: 'PW', cls: 'm-pw', sym: 'PW' },
   full:     { label: 'Full', cls: 'm-full', sym: 'Full', small: true },
   prn:      { label: 'PRN', cls: 'm-prn', sym: 'PRN', small: true },
-  iop:      { label: 'IOP', cls: 'm-iop', sym: 'IOP', small: true }
+  iop:      { label: 'IOP', cls: 'm-iop', sym: 'IOP', small: true },
+  htn:      { label: 'High blood pressure', cls: 'm-med', sym: '<svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7.5-4.6-9.2-9.3C1.6 7.2 3.9 4.5 7 4.5c2 0 3.6 1.2 5 3 1.4-1.8 3-3 5-3 3.1 0 5.4 2.7 4.2 6.2C19.5 15.4 12 20 12 20z"/><path d="M5.5 12h3l1.5-2.5 2 5 1.5-2.5h5"/></g></svg>' },
+  hiv:      { label: 'HIV', cls: 'm-med', sym: '<svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 13.5C9.6 10.8 8.5 9 8.5 7.2 8.5 5.1 10 3.5 12 3.5s3.5 1.6 3.5 3.7c0 1.8-1.1 3.6-3.5 6.3z"/><path d="M10.2 10.9 6 20.5M13.8 10.9l4.2 9.6"/></g></svg>' },
+  seizure:  { label: 'Seizures', cls: 'm-med', sym: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M13.5 2.5 5 13.5h6l-1 8 8.5-11h-6z"/></svg>' },
+  diabetes: { label: 'Diabetes', cls: 'm-med', sym: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M12 3.5c3 4 6 7.3 6 10.8a6 6 0 0 1-12 0C6 10.8 9 7.5 12 3.5z"/></svg>' },
+  medother: { label: 'Other medical', cls: 'm-med', sym: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M9.5 4h5v5.5H20v5h-5.5V20h-5v-5.5H4v-5h5.5z"/></svg>' }
 };
 
 let pin = '';

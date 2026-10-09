@@ -93,7 +93,7 @@ function diff(key: string, before: Magnet[], after: Magnet[], initials?: string)
   return events;
 }
 
-const TYPES = new Set(["offunit", "reassess", "pw", "full", "prn", "iop"]);
+const TYPES = new Set(["offunit", "reassess", "pw", "full", "prn", "iop", "htn", "hiv", "seizure", "diabetes", "medother"]);
 const str = (v: unknown, max = 120) => (typeof v === "string" ? v.slice(0, max) : undefined);
 
 function clean(list: unknown): Magnet[] {
