@@ -302,6 +302,24 @@
   }
   .med-time b { font-family: "IBM Plex Sans", sans-serif; font-size: 10px; letter-spacing: .5px; padding: 1px 5px; border-radius: 4px; background: rgba(0,0,0,0.12); }
   .med-time.due { outline: 2.5px solid currentColor; outline-offset: 1px; }
+  button.med-time { cursor: pointer; font-family: "IBM Plex Mono", monospace; min-height: 32px; }
+  button.med-time:hover { filter: brightness(0.96); }
+  .med-time .mk { font-family: "IBM Plex Sans", sans-serif; font-size: 13px; font-weight: 800; }
+  .med-time.st-taken { box-shadow: inset 0 0 0 2px rgba(29,81,36,0.55); }
+  .med-time.st-taken .mk { color: #1d6b2a; }
+  .med-time.st-not_taken { box-shadow: inset 0 0 0 2px #a32d2d; }
+  .med-time.st-not_taken .mk { color: #a32d2d; }
+  .med-time .nt { font-weight: 800; margin-left: -2px; }
+  .mp-choices { border: 0; padding: 0; margin: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .mp-choice { display: flex !important; align-items: center; gap: 10px; min-height: 56px; padding: 0 14px; border: 2px solid var(--line);
+    border-radius: 12px; font-size: 15px !important; font-weight: 700 !important; color: var(--ink) !important; cursor: pointer; }
+  .mp-choice input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .mp-ic { width: 28px; height: 28px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 15px; }
+  .mp-choice.ok .mp-ic { background: #d9f2dc; color: #1d6b2a; }
+  .mp-choice.no .mp-ic { background: #fbe9e9; color: #a32d2d; }
+  .mp-choice.ok:has(input:checked) { border-color: #2f8a3d; background: #f0f9f1; }
+  .mp-choice.no:has(input:checked) { border-color: #a32d2d; background: #fdf3f3; }
+  .mp-choice:has(input:focus-visible) { outline: 3px solid var(--teal); outline-offset: 2px; }
   .t-8a  { background: #fff1c2; color: #6b4e00; }
   .t-12p { background: #ffdcb8; color: #7a3d00; }
   .t-2p  { background: #ffd3d9; color: #7a1f2e; }
@@ -594,6 +612,28 @@
   </form>
 </dialog>
 
+<dialog class="pc-dialog" id="med-dialog" aria-labelledby="mp-title">
+  <form id="med-form">
+    <div class="dlg-head"><h3 id="mp-title">Meds</h3></div>
+    <div class="dlg-sub" id="mp-sub"></div>
+    <div class="dlg-body">
+      <fieldset class="mp-choices" id="mp-choices">
+        <legend class="visually-hidden">Did the patient take their meds?</legend>
+        <label class="mp-choice ok"><input type="radio" name="mp" value="taken"><span class="mp-ic" aria-hidden="true">✓</span>Took meds</label>
+        <label class="mp-choice no"><input type="radio" name="mp" value="not_taken"><span class="mp-ic" aria-hidden="true">✕</span>Did not take</label>
+      </fieldset>
+      <label>Note<input type="text" id="mp-note" maxlength="240" placeholder="Optional, e.g. refused, held for low BP, given late"></label>
+      <div class="dlg-error" id="mp-error" role="alert"></div>
+    </div>
+    <div class="dlg-foot">
+      <button type="button" class="btn btn-danger" id="mp-clear">Clear</button>
+      <span class="spacer"></span>
+      <button type="button" class="btn btn-ghost" id="mp-cancel">Cancel</button>
+      <button type="submit" class="btn btn-primary">Save</button>
+    </div>
+  </form>
+</dialog>
+
 <dialog class="pc-dialog" id="picker-dialog" aria-labelledby="pk-title">
   <div class="dlg-head"><h3 id="pk-title">Add a magnet</h3></div>
   <div class="dlg-sub" id="pk-sub"></div>
@@ -719,8 +759,9 @@ function cleanMedTimes(raw) {
 // Each med time gets its own colored block. The six standard pass times have fixed colors;
 // any other time gets a neutral block. The block that's due now is outlined and marked.
 const MED_TIME_COLORS = { 480: 't-8a', 720: 't-12p', 840: 't-2p', 960: 't-4p', 1080: 't-6p', 1200: 't-8p' };
-function medTimeBlocksHtml(raw) {
+function medTimeBlocksHtml(raw, key) {
   const mins = Array.from(new Set(parseMedTimesToMinutes(raw))).sort((a, b) => a - b);
+  const passes = (medStore[key] || {});
   const central = nowInCentral();
   const nowMin = central.getHours() * 60 + central.getMinutes();
   return mins.map(t => {
@@ -728,7 +769,12 @@ function medTimeBlocksHtml(raw) {
     const due = diff <= MED_WINDOW_MIN;
     const h = Math.floor(t / 60), m = t % 60, ap = h >= 12 ? 'PM' : 'AM', h12 = h % 12 || 12;
     const label = h12 + (m ? ':' + String(m).padStart(2, '0') : '') + ' ' + ap;
-    return `<span class="med-time ${MED_TIME_COLORS[t] || 't-other'}${due ? ' due' : ''}"${due ? ' aria-label="' + label + ', due now"' : ''}>${label}${due ? '<b>NOW</b>' : ''}</span>`;
+    const pass = passes[String(t)];
+    const st = pass ? pass.status : '';
+    const mark = st === 'taken' ? '<span class="mk" aria-hidden="true">\u2713</span>' : st === 'not_taken' ? '<span class="mk" aria-hidden="true">\u2715</span>' : '';
+    const stText = st === 'taken' ? 'taken' : st === 'not_taken' ? 'not taken' : (due ? 'due now' : 'not recorded');
+    const tip = label + ' meds: ' + stText + (pass && pass.note ? ' \u2014 ' + pass.note : '');
+    return `<button type="button" class="med-time ${MED_TIME_COLORS[t] || 't-other'}${due && !st ? ' due' : ''}${st ? ' st-' + st : ''}" data-act="med" data-key="${escapeHtml(key)}" data-time="${t}" data-label="${label}" title="${escapeHtml(tip)}" aria-label="${escapeHtml(tip)}. Record">${mark}${label}${due && !st ? '<b>NOW</b>' : ''}${pass && pass.note ? '<span class="nt" aria-hidden="true">\u2026</span>' : ''}</button>`;
   }).join('');
 }
 
@@ -846,9 +892,10 @@ function buildCardHtml(c, ev) {
   const medCoins = medicalCoinsHtml(pKey);
   let medTimesHtml = '';
   if (medTimes || medCoins) {
-    const blocks = medTimeBlocksHtml(rawMedTimes);
-    medTimesHtml = `<div class="med-banner${mStatus === 'due' ? ' is-due' : ''}">
-      <span class="med-label">${clockIcon}<span>${mStatus === 'due' ? 'Meds due now' : 'Meds'}</span></span>
+    const blocks = medTimeBlocksHtml(rawMedTimes, pKey);
+    const dueOpen = / due[" ]/.test(blocks); // a med time is due now and hasn't been recorded yet
+    medTimesHtml = `<div class="med-banner${dueOpen ? ' is-due' : ''}">
+      <span class="med-label">${clockIcon}<span>${dueOpen ? 'Meds due now' : 'Meds'}</span></span>
       <span class="med-blocks">${blocks || '<span class="med-none">No med times</span>'}</span>
       ${medCoins ? `<span class="med-conditions" aria-label="Medical">${medCoins}</span>` : ''}
     </div>`;
@@ -1143,6 +1190,9 @@ function medicalCoinsHtml(key) {
 }
 
 let magnetStore = {};
+let medStore = {};      // today's med passes: { [patientKey]: { [minute]: { status, note, at } } }
+let medStoreDate = '';
+let medEditing = null;  // { key, time, label }
 let magnetsUpdatedAt = '';
 let armedType = null;
 let editing = null; // { key, idx }
@@ -1224,9 +1274,19 @@ function lockBoard() {
   renderTray(); if (clients.length) renderClients();
 }
 
+async function loadMeds() {
+  const today = centralNow().date;
+  const data = await magnetApi('GET', '/meds?date=' + today);
+  const changed = JSON.stringify(data.meds || {}) !== JSON.stringify(medStore) || medStoreDate !== today;
+  medStore = data.meds || {}; medStoreDate = today;
+  return changed;
+}
+
 async function loadMagnets() {
   if (!boardPin) return;
   try {
+    const medsChanged = await loadMeds();
+    if (medsChanged && clients.length) renderClients();
     const data = await magnetApi('GET', '/magnets');
     setSync('Synced ' + new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }));
     if (data.updatedAt !== magnetsUpdatedAt) {
@@ -1283,6 +1343,43 @@ function initialsForKey(key) {
 }
 
 function bedForKey(key) { return key.split('|')[0] || ''; }
+
+// ---- Med pass: click a med time to record whether the patient took their meds ----
+function openMedPass(key, time, label) {
+  if (!boardPin) { document.getElementById('unlock-btn').click(); return; }
+  medEditing = { key, time, label };
+  const pass = (medStore[key] || {})[String(time)];
+  document.getElementById('mp-title').textContent = label + ' meds';
+  document.getElementById('mp-sub').textContent = 'Bed ' + bedForKey(key) + (initialsForKey(key) ? ' \u00b7 ' + initialsForKey(key) : '') + ' \u00b7 today';
+  document.querySelectorAll('#mp-choices input').forEach(r => { r.checked = !!pass && r.value === pass.status; });
+  document.getElementById('mp-note').value = pass ? (pass.note || '') : '';
+  document.getElementById('mp-clear').style.display = pass ? '' : 'none';
+  document.getElementById('mp-error').textContent = '';
+  document.getElementById('med-dialog').showModal();
+  (document.querySelector('#mp-choices input:checked') || document.querySelector('#mp-choices input')).focus();
+}
+
+async function saveMedPass(status) {
+  if (!medEditing) return;
+  const { key, time } = medEditing;
+  const note = document.getElementById('mp-note').value.trim();
+  const today = centralNow().date;
+  const before = JSON.parse(JSON.stringify(medStore));
+  const p = medStore[key] || (medStore[key] = {});
+  if (status) p[String(time)] = { status, note, at: new Date().toISOString() }; else delete p[String(time)];
+  medEditing = null; document.getElementById('med-dialog').close(); renderClients();
+  try {
+    const data = await magnetApi('PUT', '/meds/' + encodeURIComponent(key),
+      { date: today, time, status, note, patient: { initials: initialsForKey(key) } });
+    medStore = data.meds || {}; medStoreDate = today;
+    setSync('Saved ' + new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }));
+    renderClients();
+  } catch (err) {
+    medStore = before; renderClients();
+    if (err.pin) { lockBoard(); toast('Board PIN needed to record meds.'); }
+    else toast('Couldn\u2019t save that med pass. Check the connection and try again.');
+  }
+}
 
 function openEditor(key, idx, isNew) {
   const m = (magnetStore[key] || [])[idx]; if (!m) return;
@@ -1360,6 +1457,7 @@ function initMagnetBoard() {
     const actEl = e.target.closest('[data-act]');
     if (actEl && actEl.dataset.act === 'edit') { openEditor(actEl.dataset.key, parseInt(actEl.dataset.idx, 10)); return; }
     if (actEl && actEl.dataset.act === 'add') { openPicker(actEl.dataset.key); return; }
+    if (actEl && actEl.dataset.act === 'med') { openMedPass(actEl.dataset.key, parseInt(actEl.dataset.time, 10), actEl.dataset.label); return; }
     if (armedType) {
       const card = e.target.closest('.client-card[data-key]');
       if (card) { const t = armedType; setArmed(null); placeMagnet(card.dataset.key, t); }
@@ -1406,6 +1504,17 @@ function initMagnetBoard() {
   });
   document.getElementById('md-cancel').addEventListener('click', () => { editing = null; dlg.close(); });
 
+  // Med pass dialog
+  document.getElementById('med-form').addEventListener('submit', e => {
+    e.preventDefault();
+    const chosen = document.querySelector('#mp-choices input:checked');
+    if (!chosen) { document.getElementById('mp-error').textContent = 'Choose whether the meds were taken.'; return; }
+    saveMedPass(chosen.value);
+  });
+  document.getElementById('mp-clear').addEventListener('click', () => saveMedPass(''));
+  document.getElementById('mp-choices').addEventListener('change', () => { document.getElementById('mp-error').textContent = ''; });
+  document.getElementById('mp-cancel').addEventListener('click', () => { medEditing = null; document.getElementById('med-dialog').close(); });
+
   // Picker
   const pk = document.getElementById('picker-dialog');
   document.getElementById('picker-grid').addEventListener('click', e => {
@@ -1432,6 +1541,7 @@ function initMagnetBoard() {
       const data = await magnetApi('GET', '/magnets');
       try { localStorage.setItem(PIN_KEY, tryPin); } catch (err) {}
       magnetStore = data.magnets || {}; magnetsUpdatedAt = data.updatedAt;
+      try { await loadMeds(); } catch (err) {}
       pinDlg.close(); renderTray(); if (clients.length) renderClients();
       setSync('Synced');
     } catch (err) {
