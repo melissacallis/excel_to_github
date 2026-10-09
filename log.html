@@ -61,6 +61,17 @@
   .act.updated { background: #e4eaf8; color: #22397a; }
   .act.removed { background: #f1f2f4; color: #4a5250; }
   .act.returned { background: #d8f0fa; color: #0b4f6c; }
+  .act.taken { background: #d9f2dc; color: #1d5124; }
+  .act.not_taken { background: #fbe0e0; color: #8a2222; }
+  .act.cleared { background: #f1f2f4; color: #4a5250; }
+  .med-time { display: inline-flex; align-items: center; padding: 3px 8px; border-radius: 7px; font-family: "IBM Plex Mono", monospace; font-size: 12px; font-weight: 600; white-space: nowrap; border: 1px solid rgba(0,0,0,.06); }
+  .t-8a  { background: #fff1c2; color: #6b4e00; }
+  .t-12p { background: #ffdcb8; color: #7a3d00; }
+  .t-2p  { background: #ffd3d9; color: #7a1f2e; }
+  .t-4p  { background: #d3eed5; color: #1d5124; }
+  .t-6p  { background: #ddd8f8; color: #3b2a8a; }
+  .t-8p  { background: #cfdaf2; color: #16234a; }
+  .t-other { background: #eceff3; color: #3a4a47; }
   .dur { font-size: 12px; color: var(--muted); margin-left: 6px; white-space: nowrap; }
   td:nth-child(2) { white-space: nowrap; }
   .empty { padding: 40px 20px; text-align: center; color: var(--muted); }
@@ -142,20 +153,16 @@
       </div>
       <label>From<input type="date" id="from"></label>
       <label>To<input type="date" id="to"></label>
-      <label>Magnet
+      <label>Show
         <select id="type">
-          <option value="">All magnets</option>
+          <option value="">Everything</option>
+          <option value="medpass">Med passes</option>
           <option value="offunit">Off unit</option>
           <option value="reassess">Reassessments complete</option>
           <option value="pw">PW</option>
           <option value="full">Full</option>
           <option value="prn">PRN</option>
           <option value="iop">IOP</option>
-          <option value="htn">High blood pressure</option>
-          <option value="hiv">HIV</option>
-          <option value="seizure">Seizures</option>
-          <option value="diabetes">Diabetes</option>
-          <option value="medother">Other medical</option>
         </select>
       </label>
       <label>Bed or patient<input type="search" id="q" placeholder="e.g. 2B or R.R."></label>
@@ -174,7 +181,7 @@
             <tr>
               <th scope="col">When</th>
               <th scope="col">Action</th>
-              <th scope="col">Magnet</th>
+              <th scope="col">Magnet / med pass</th>
               <th scope="col">Bed</th>
               <th scope="col">Patient</th>
               <th scope="col">Member ID</th>
@@ -245,7 +252,11 @@ function offUnitMinutes(e) {
 function fmtDur(m) { if (m == null) return ''; const h = Math.floor(m / 60), r = m % 60; return h ? `${h}h ${r}m` : `${r}m`; }
 function coin(t) { const d = TYPES[t]; return d ? `<span class="coin ${d.cls}${d.small ? ' coin-sm' : ''}" aria-hidden="true">${d.sym}</span>` : ''; }
 function actionOf(e) { return e.type === 'offunit' && e.action === 'removed' ? 'returned' : e.action; }
-const ACTION_LABEL = { placed: 'Placed', updated: 'Edited', removed: 'Removed', returned: 'Back on unit' };
+const ACTION_LABEL = { placed: 'Placed', updated: 'Edited', removed: 'Removed', returned: 'Back on unit',
+                       taken: 'Took meds', not_taken: 'Did not take', cleared: 'Cleared' };
+const MEDICAL_TYPES = new Set(['htn', 'hiv', 'seizure', 'diabetes', 'medother']);
+const MED_COLORS = { '08:00': 't-8a', '12:00': 't-12p', '14:00': 't-2p', '16:00': 't-4p', '18:00': 't-6p', '20:00': 't-8p' };
+function medBlock(e) { return `<span class="med-time ${MED_COLORS[e.time] || 't-other'}">${esc(fmtTime12(e.time))}</span>`; }
 
 async function api(path) {
   const res = await fetch(MAGNET_API + path, { headers: { 'X-Board-Pin': pin }, cache: 'no-store' });
@@ -259,7 +270,7 @@ async function load() {
   $('status').textContent = 'Loading…';
   try {
     const data = await api('/log?from=' + encodeURIComponent(from) + '&to=' + encodeURIComponent(to));
-    events = data.events || [];
+    events = (data.events || []).filter(e => !MEDICAL_TYPES.has(e.type));
     render();
     $('status').textContent = 'Updated ' + new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) + ' · refreshes every minute';
   } catch (err) {
@@ -282,11 +293,11 @@ function render() {
     return `<tr>
       <td class="mono">${esc(fmtWhen(e.at))}</td>
       <td><span class="act ${a}">${ACTION_LABEL[a] || esc(a)}</span>${dur != null ? `<span class="dur">after ${fmtDur(dur)}</span>` : ''}</td>
-      <td><span class="mag">${coin(e.type)}${esc(d.label)}</span></td>
+      <td>${e.type === 'medpass' ? `<span class="mag">${medBlock(e)} meds</span>` : `<span class="mag">${coin(e.type)}${esc(d.label)}</span>`}</td>
       <td class="mono">${esc(e.bed)}</td>
       <td>${esc(e.initials || '')}</td>
       <td class="mono">${esc(e.memberId || '')}</td>
-      <td class="mono">${esc(fmtTime12(e.time))}</td>
+      <td class="mono">${e.type === 'medpass' ? '' : esc(fmtTime12(e.time))}</td>
       <td class="mono">${esc(fmtDate(e.date))}</td>
       <td>${esc(e.location || '')}</td>
       <td>${esc(e.note || '')}</td>
@@ -299,18 +310,20 @@ function render() {
   const durs = list.filter(e => actionOf(e) === 'returned').map(offUnitMinutes).filter(m => m != null);
   const avg = durs.length ? Math.round(durs.reduce((x, y) => x + y, 0) / durs.length) : null;
   const patients = new Set(list.map(e => e.key)).size;
+  const taken = list.filter(e => e.action === 'taken').length;
+  const missed = list.filter(e => e.action === 'not_taken').length;
   $('summary').innerHTML = [
-    [list.length, 'Log entries'], [placed, 'Magnets placed'], [offTrips, 'Off-unit trips'],
+    [list.length, 'Log entries'], [taken, 'Meds taken'], [missed, 'Meds not taken'], [placed, 'Magnets placed'], [offTrips, 'Off-unit trips'],
     [avg == null ? '—' : fmtDur(avg), 'Avg time off unit'], [patients, 'Patients']
   ].map(([n, l]) => `<div class="panel stat"><div class="n">${esc(n)}</div><div class="l">${esc(l)}</div></div>`).join('');
 }
 
 function csv() {
-  const head = ['When', 'Action', 'Magnet', 'Bed', 'Patient', 'Member ID', 'Time', 'Date', 'Location', 'Note', 'Minutes off unit'];
+  const head = ['When', 'Action', 'Magnet / med pass', 'Bed', 'Patient', 'Member ID', 'Time', 'Date', 'Location', 'Note', 'Minutes off unit'];
   const q = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
   const lines = filtered().map(e => {
     const a = actionOf(e);
-    return [fmtWhen(e.at), ACTION_LABEL[a] || a, (TYPES[e.type] || {}).label || e.type, e.bed, e.initials, e.memberId,
+    return [fmtWhen(e.at), ACTION_LABEL[a] || a, e.type === 'medpass' ? fmtTime12(e.time) + ' meds' : ((TYPES[e.type] || {}).label || e.type), e.bed, e.initials, e.memberId,
             fmtTime12(e.time), e.date, e.location, e.note, a === 'returned' ? offUnitMinutes(e) : ''].map(q).join(',');
   });
   const blob = new Blob([head.map(q).join(',') + '\n' + lines.join('\n')], { type: 'text/csv' });

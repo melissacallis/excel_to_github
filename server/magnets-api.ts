@@ -6,7 +6,11 @@
 //
 // GET  /magnets          -> { magnets: { [patientKey]: Magnet[] }, updatedAt }
 // PUT  /magnets/:key     -> body { magnets: Magnet[], patient?: { initials } }  (replaces that patient's magnets)
+// GET  /meds?date=YYYY-MM-DD -> { meds: { [patientKey]: { [minuteOfDay]: MedPass } } }
+// PUT  /meds/:key        -> body { date, time (minute of day), status: "taken"|"not_taken"|"", note?, patient?: { initials } }
 // GET  /log?from=YYYY-MM-DD&to=YYYY-MM-DD -> { events: LogEvent[] }  (newest first)
+//
+// Medical-condition magnets are stored but NOT written to the log. Med passes are logged.
 //
 // Every change is also appended to /data/log.jsonl: one line per magnet placed, edited or removed.
 // GET  /health           -> "ok"
@@ -15,6 +19,7 @@
 const DATA_DIR = Bun.env.DATA_DIR || "/data";
 const FILE = `${DATA_DIR}/magnets.json`;
 const LOG_FILE = `${DATA_DIR}/log.jsonl`;
+const MEDS_FILE = `${DATA_DIR}/meds.json`;
 const PIN = Bun.env.BOARD_PIN || "";
 const ALLOWED_ORIGINS = (Bun.env.ALLOWED_ORIGINS || "https://melissacallis.github.io")
   .split(",").map(s => s.trim()).filter(Boolean);
@@ -48,9 +53,18 @@ function withLock<T>(fn: () => Promise<T>): Promise<T> {
   return next;
 }
 
+type MedPass = { status: "taken" | "not_taken"; note?: string; at: string };
+type MedStore = Record<string, Record<string, Record<string, MedPass>>>; // date -> key -> minute -> pass
+
+async function loadMeds(): Promise<MedStore> {
+  const f = Bun.file(MEDS_FILE);
+  if (!(await f.exists())) return {};
+  try { return (await f.json()) || {}; } catch { return {}; }
+}
+
 type LogEvent = {
   at: string;            // when the change was made (ISO)
-  action: "placed" | "updated" | "removed";
+  action: "placed" | "updated" | "removed" | "taken" | "not_taken" | "cleared";
   key: string; bed: string; memberId: string; initials?: string;
   type: string;
   time?: string; date?: string; location?: string; note?: string;
@@ -93,6 +107,7 @@ function diff(key: string, before: Magnet[], after: Magnet[], initials?: string)
   return events;
 }
 
+const MEDICAL = new Set(["htn", "hiv", "seizure", "diabetes", "medother"]);
 const TYPES = new Set(["offunit", "reassess", "pw", "full", "prn", "iop", "htn", "hiv", "seizure", "diabetes", "medother"]);
 const str = (v: unknown, max = 120) => (typeof v === "string" ? v.slice(0, max) : undefined);
 
@@ -155,6 +170,56 @@ Bun.serve({
       return json(req, { events });
     }
 
+    if (url.pathname === "/meds" || url.pathname.startsWith("/meds/")) {
+      if (!PIN || req.headers.get("X-Board-Pin") !== PIN) {
+        return json(req, { error: "Wrong or missing board PIN" }, 401);
+      }
+      const isDate = (d: unknown) => typeof d === "string" && /^\d{4}-\d{2}-\d{2}$/.test(d);
+      if (req.method === "GET" && url.pathname === "/meds") {
+        const date = url.searchParams.get("date") || "";
+        if (!isDate(date)) return json(req, { error: "date=YYYY-MM-DD required" }, 400);
+        const all = await loadMeds();
+        return json(req, { date, meds: all[date] || {} });
+      }
+      if (req.method === "PUT" && url.pathname.startsWith("/meds/")) {
+        const key = decodeURIComponent(url.pathname.slice("/meds/".length)).slice(0, 80);
+        let body: any;
+        try { body = await req.json(); } catch { return json(req, { error: "Bad JSON" }, 400); }
+        const date = body?.date, minute = Number(body?.time);
+        const status = body?.status;
+        if (!key || !isDate(date) || !Number.isInteger(minute) || minute < 0 || minute >= 1440) {
+          return json(req, { error: "key, date and time are required" }, 400);
+        }
+        if (!["taken", "not_taken", ""].includes(status)) return json(req, { error: "Bad status" }, 400);
+        const note = str(body?.note, 240) || "";
+        const initials = str(body?.patient?.initials, 20);
+        const day = await withLock(async () => {
+          const all = await loadMeds();
+          const d = all[date] || (all[date] = {});
+          const p = d[key] || (d[key] = {});
+          const had = p[String(minute)];
+          if (status) p[String(minute)] = { status, note, at: new Date().toISOString() };
+          else delete p[String(minute)];
+          if (!Object.keys(p).length) delete d[key];
+          // keep ~60 days of med passes in the live file (the log keeps everything)
+          for (const old of Object.keys(all).sort().slice(0, -60)) delete all[old];
+          await Bun.write(MEDS_FILE, JSON.stringify(all));
+          if (status || had) {
+            const [bed, memberId = ""] = key.split("|");
+            const hh = Math.floor(minute / 60), mm = minute % 60;
+            await appendLog([{
+              at: new Date().toISOString(), action: status ? status : "cleared",
+              key, bed, memberId, initials, type: "medpass",
+              time: `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`, date, note,
+            }]);
+          }
+          return all[date] || {};
+        });
+        return json(req, { date, meds: day });
+      }
+      return json(req, { error: "Not found" }, 404);
+    }
+
     if (url.pathname === "/magnets" || url.pathname.startsWith("/magnets/")) {
       if (!PIN || req.headers.get("X-Board-Pin") !== PIN) {
         return json(req, { error: "Wrong or missing board PIN" }, 401);
@@ -177,7 +242,8 @@ Bun.serve({
           if (list.length) store.magnets[key] = list; else delete store.magnets[key];
           store.updatedAt = new Date().toISOString();
           await Bun.write(FILE, JSON.stringify(store));
-          await appendLog(diff(key, before, list, initials));
+          // Medical-condition magnets are not logged.
+          await appendLog(diff(key, before, list, initials).filter(e => !MEDICAL.has(e.type)));
           return store;
         });
         return json(req, saved);
