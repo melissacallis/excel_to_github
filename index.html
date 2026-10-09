@@ -301,11 +301,101 @@
   .empty-state, .error-state { text-align: center; padding: 60px 20px; color: var(--muted); font-size: 14px; }
   .error-state { color: var(--red); }
 
+
+  /* ===================== Magnet board ===================== */
+  .magnet-tray {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+    padding: 10px 14px; margin: -4px 0 18px; box-shadow: var(--shadow);
+    position: sticky; top: 8px; z-index: 5; /* stays in reach while scrolling down to a patient */
+  }
+  .tray-title { font-size: 12px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; color: var(--slate); margin-right: 4px; }
+  .tray-hint { font-size: 12.5px; color: var(--muted); margin-left: auto; }
+  .tray-sync { font-family: "IBM Plex Mono", monospace; font-size: 11.5px; color: var(--muted); }
+  .tray-sync.err { color: var(--red); font-weight: 600; }
+
+  .magnet {
+    display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 14px 0 8px;
+    border-radius: 999px; border: 1px solid rgba(0,0,0,0.08); cursor: pointer;
+    font: inherit; font-size: 13px; font-weight: 600; line-height: 1.1; white-space: nowrap;
+    box-shadow: 0 2px 0 rgba(0,0,0,0.12), 0 4px 10px rgba(16,26,56,0.12);
+    transition: transform .08s ease;
+  }
+  .magnet:active { transform: translateY(1px); box-shadow: 0 1px 0 rgba(0,0,0,0.12); }
+  .magnet .mi { width: 28px; height: 28px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+    background: rgba(255,255,255,0.65); font-size: 11px; font-weight: 800; letter-spacing: -.2px; flex-shrink: 0; }
+  .magnet .mi svg { width: 20px; height: 20px; }
+  .magnet:not(:has(.mi)) { padding: 0 16px; }
+  .magnet .msub { font-weight: 500; opacity: .9; }
+  .magnet.armed { outline: 3px solid var(--teal-deep); outline-offset: 2px; }
+  .magnet[draggable="true"] { cursor: grab; }
+  /* Tray magnets look like a stack: there's always another one underneath */
+  #tray-magnets .magnet {
+    box-shadow:
+      0 2px 0 rgba(0,0,0,0.12),
+      3px 4px 0 -1px rgba(255,255,255,0.9), 3px 4px 0 0 rgba(0,0,0,0.10),
+      6px 8px 0 -2px rgba(255,255,255,0.9), 6px 8px 0 -1px rgba(0,0,0,0.08),
+      0 6px 14px rgba(16,26,56,0.12);
+    margin: 0 6px 8px 0;
+  }
+  @keyframes magnet-refill { 0% { transform: translateY(-10px) scale(.85); opacity: 0; } 70% { transform: translateY(1px) scale(1.04); opacity: 1; } 100% { transform: none; } }
+  #tray-magnets .magnet.refill { animation: magnet-refill .38s ease-out; }
+  @media (prefers-reduced-motion: reduce) { #tray-magnets .magnet.refill { animation: none; } }
+
+  .m-offunit  { background: #cdeefb; color: #0b4f6c; }
+  .m-reassess { background: #d9f2dc; color: #1d5124; }
+  .m-pw       { background: #ffe1c7; color: #7a3a07; }
+  .m-full     { background: #f9d6d6; color: #7a2121; }
+  .m-prn      { background: #fde9a6; color: #5e4500; }
+  .m-iop      { background: #dfe3fb; color: #2b3a8a; }
+
+  .magnet-row { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 2px 0 6px; }
+  .magnet-row .magnet { min-height: 36px; font-size: 12.5px; }
+  .magnet-row .magnet .mi { width: 24px; height: 24px; }
+  .status-row .add-magnet { margin-left: 8px; }
+  .status-row .status-ref + .add-magnet { margin-left: 8px; }
+  .status-row .status-reason + .add-magnet { margin-left: auto; }
+  .add-magnet {
+    min-height: 36px; padding: 0 12px; border-radius: 999px; border: 1px dashed #8a9b97;
+    background: transparent; color: var(--slate); font: inherit; font-size: 12.5px; cursor: pointer;
+  }
+  .add-magnet:hover { background: var(--teal-light); }
+
+  .client-card.off-unit { box-shadow: 0 0 0 2px #7cc6e6, var(--shadow); }
+  body.placing .client-card { cursor: copy; }
+  body.placing .client-card:hover, .client-card.drop-over { box-shadow: 0 0 0 3px var(--teal), var(--shadow); }
+
+  dialog.pc-dialog { border: none; border-radius: 16px; padding: 0; width: min(420px, calc(100vw - 32px)); box-shadow: 0 24px 60px rgba(10,16,40,0.35); color: var(--ink); }
+  dialog.pc-dialog::backdrop { background: rgba(16,26,56,0.45); }
+  .dlg-head { display: flex; align-items: center; gap: 10px; padding: 18px 20px 6px; }
+  .dlg-head h3 { font-family: "Sora", "IBM Plex Sans", sans-serif; font-size: 18px; margin: 0; }
+  .dlg-sub { padding: 0 20px; font-size: 13px; color: var(--muted); }
+  .dlg-body { padding: 14px 20px; display: grid; gap: 12px; }
+  .dlg-body label { display: grid; gap: 5px; font-size: 12.5px; font-weight: 600; color: var(--slate); }
+  .dlg-body input { min-height: 44px; padding: 0 12px; border: 1px solid #b9c6c2; border-radius: 10px; font: inherit; font-size: 15px; color: var(--ink); }
+  .dlg-body input:focus-visible { outline: 3px solid var(--teal); outline-offset: 1px; }
+  .dlg-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .dlg-foot { display: flex; gap: 8px; padding: 6px 20px 18px; flex-wrap: wrap; }
+  .dlg-foot .spacer { flex: 1; }
+  .btn { min-height: 44px; padding: 0 16px; border-radius: 10px; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; border: 1px solid transparent; }
+  .btn-primary { background: var(--teal-deep); color: #fff; }
+  .btn-ghost { background: transparent; border-color: #b9c6c2; color: var(--slate); }
+  .btn-danger { background: transparent; border-color: #e3b4b4; color: var(--red); }
+  .picker-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .picker-grid .magnet { justify-content: flex-start; width: 100%; }
+  .dlg-error { color: var(--red); font-size: 13px; min-height: 18px; }
+
+  .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: #16234a; color: #fff;
+    padding: 12px 18px; border-radius: 10px; font-size: 14px; box-shadow: 0 10px 30px rgba(0,0,0,.3); z-index: 50; display: none; }
+
   @media (max-width: 760px) {
     .client-card { grid-template-columns: 1fr; }
     .summary-bar { grid-template-columns: repeat(2, 1fr); }
     .board-columns { grid-template-columns: 1fr; }
     .legend { margin-left: 0; }
+    .tray-hint { margin-left: 0; width: 100%; }
+    .magnet-tray { position: static; }
+    .picker-grid { grid-template-columns: 1fr; }
     header { padding: 20px 16px 62px; grid-template-columns: 1fr; }
     header .clock { grid-column: 1; grid-row: 2; justify-self: start; align-items: flex-start; text-align: left; }
     header .census { grid-row: 3; }
@@ -388,6 +478,15 @@
       </div>
     </div>
 
+
+    <div class="magnet-tray" id="magnet-tray" aria-label="Magnets">
+      <span class="tray-title">Magnets</span>
+      <div id="tray-magnets" style="display:contents;"></div>
+      <button type="button" class="btn btn-ghost" id="unlock-btn" style="display:none;">Unlock magnets</button>
+      <span class="tray-hint" id="tray-hint">Drag a magnet onto a patient, or tap a magnet and then tap the patient.</span>
+      <span class="tray-sync" id="tray-sync" aria-live="polite"></span>
+    </div>
+
     <div class="board-columns">
       <section aria-labelledby="col-male">
         <h2 class="board-column-header male" id="col-male"><span class="dot" aria-hidden="true"></span>Men</h2>
@@ -404,6 +503,49 @@
   <div class="error-state" id="error-state" style="display:none;"></div>
 
 </main>
+
+<dialog class="pc-dialog" id="magnet-dialog" aria-labelledby="md-title">
+  <form method="dialog" id="magnet-form">
+    <div class="dlg-head"><span id="md-icon"></span><h3 id="md-title">Magnet</h3></div>
+    <div class="dlg-sub" id="md-sub"></div>
+    <div class="dlg-body">
+      <div class="dlg-row">
+        <label>Time<input type="time" id="md-time"></label>
+        <label>Date<input type="date" id="md-date"></label>
+      </div>
+      <label id="md-location-wrap">Where did they go?<input type="text" id="md-location" maxlength="120" placeholder="e.g. Clinic, court, pass with family"></label>
+      <label>Note<input type="text" id="md-note" maxlength="240" placeholder="Optional"></label>
+    </div>
+    <div class="dlg-foot">
+      <button type="button" class="btn btn-danger" id="md-remove">Remove magnet</button>
+      <span class="spacer"></span>
+      <button type="button" class="btn btn-ghost" id="md-cancel">Cancel</button>
+      <button type="submit" class="btn btn-primary" id="md-save">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog class="pc-dialog" id="picker-dialog" aria-labelledby="pk-title">
+  <div class="dlg-head"><h3 id="pk-title">Add a magnet</h3></div>
+  <div class="dlg-sub" id="pk-sub"></div>
+  <div class="dlg-body"><div class="picker-grid" id="picker-grid"></div></div>
+  <div class="dlg-foot"><span class="spacer"></span><button type="button" class="btn btn-ghost" id="pk-cancel">Cancel</button></div>
+</dialog>
+
+<dialog class="pc-dialog" id="pin-dialog" aria-labelledby="pin-title">
+  <form method="dialog" id="pin-form">
+    <div class="dlg-head"><h3 id="pin-title">Unlock magnets</h3></div>
+    <div class="dlg-sub">Enter the board PIN once on this device. It's remembered after that.</div>
+    <div class="dlg-body">
+      <label>Board PIN<input type="password" inputmode="numeric" autocomplete="off" id="pin-input" maxlength="12"></label>
+      <div class="dlg-error" id="pin-error" role="alert"></div>
+    </div>
+    <div class="dlg-foot"><span class="spacer"></span><button type="button" class="btn btn-ghost" id="pin-cancel">Not now</button><button type="submit" class="btn btn-primary">Unlock</button></div>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" role="status"></div>
+
 
 <script>
 let clients = [];
@@ -592,6 +734,10 @@ function buildCardHtml(c, ev) {
   const medTimes = cleanMedTimes(rawMedTimes);
   const mStatus = medStatus(rawMedTimes);
   card.className = `client-card gender-${gender} urgent-${ev.urgency}`;
+  const pKey = patientKey(c);
+  card.dataset.key = pKey;
+  card.dataset.bed = c['Bed'] || '';
+  if ((magnetStore[pKey] || []).some(m => m.type === 'offunit')) card.classList.add('off-unit');
 
   const apptStatus = (c['Appointment Status'] || '').trim();
   const apptStatusHtml = apptStatus ? `<span class="status-chip ${apptStatusClass(apptStatus)}">${breakAtSlash(apptStatus)}</span>` : '';
@@ -630,7 +776,9 @@ function buildCardHtml(c, ev) {
       <span class="badge ${ev.urgency}">${statusLabel}</span>
       <span class="status-reason">${reasonText}</span>
       ${referralHtml ? `<span class="status-ref">Referred by ${referralHtml}</span>` : ''}
+      ${addMagnetBtnHtml(pKey, c['Bed'] || '')}
     </div>
+    ${magnetRowHtml(pKey)}
     <div class="avatar-col">
       <div class="avatar ${gender}">${initials(c['Client Initials'])}</div>
     </div>
@@ -854,6 +1002,330 @@ function tickClock() {
 }
 tickClock();
 setInterval(tickClock, 1000);
+
+
+// ===================== Magnet board =====================
+// Magnets are saved on a small shared service (Railway, project "pcentral-board"),
+// so every device and the office TV see the same board. Each patient's magnets are
+// keyed by bed + Member ID, so a new patient in the same bed starts with a clean card.
+const MAGNET_API = 'https://magnets-api-production.up.railway.app';
+const PIN_KEY = 'pcentral-board-pin';
+const MAGNET_POLL_MS = 15 * 1000;
+
+const ICONS = {
+  bird: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M2.5 15.2c2.6.2 4.6-.7 6.3-3.1 1.6-2.3 3.7-3.7 6.5-3.7 1.4 0 2.6.5 3.5 1.3l2.7-.5-1.9 1.6c.2.5.3 1 .3 1.6 0 3.9-3.4 7-7.8 7H6.3l2.1-1.8c-2.6.1-4.6-.8-5.9-2.4z"/><circle cx="17" cy="11" r="1" fill="#fff"/><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" d="M9 14.5c1.7.6 3.6.3 5-1"/></svg>',
+  check: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" d="m5 12.5 4.5 4.5L19 7.5"/></svg>',
+  pill: '<svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2"><rect x="3.5" y="8.5" width="17" height="7" rx="3.5" transform="rotate(-35 12 12)"/><path d="m10.2 8.6 4.6 6.6" /></g></svg>'
+};
+const MAGNET_TYPES = {
+  offunit:  { label: 'Off unit',               cls: 'm-offunit',  icon: ICONS.bird,  location: true },
+  reassess: { label: 'Reassessments complete', short: 'Reassess done', cls: 'm-reassess', icon: ICONS.check },
+  pw:       { label: 'PW',                     cls: 'm-pw',       text: 'PW' },
+  full:     { label: 'Full',                   cls: 'm-full',     text: 'F' },
+  prn:      { label: 'PRN',                    cls: 'm-prn',      icon: ICONS.pill },
+  iop:      { label: 'IOP',                    cls: 'm-iop',      text: 'IOP' }
+};
+const MAGNET_ORDER = ['offunit', 'reassess', 'pw', 'full', 'prn', 'iop'];
+
+let magnetStore = {};
+let magnetsUpdatedAt = '';
+let armedType = null;
+let editing = null; // { key, idx }
+let boardPin = '';
+try { boardPin = localStorage.getItem(PIN_KEY) || ''; } catch (e) { boardPin = ''; }
+
+function escapeHtml(v) {
+  return String(v == null ? '' : v).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+}
+function patientKey(c) {
+  return String(c['Bed'] || '').trim() + '|' + String(c['Member ID'] == null ? '' : c['Member ID']).trim();
+}
+function centralNow() {
+  const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Chicago', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).formatToParts(new Date());
+  const g = t => (parts.find(p => p.type === t) || {}).value || '';
+  const hh = g('hour') === '24' ? '00' : g('hour');
+  return { date: g('year') + '-' + g('month') + '-' + g('day'), time: hh + ':' + g('minute') };
+}
+function fmtTime12(t) {
+  const m = /^(\d{1,2}):(\d{2})/.exec(t || '');
+  if (!m) return t || '';
+  let h = parseInt(m[1], 10); const ap = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12;
+  return h + ':' + m[2] + ' ' + ap;
+}
+function fmtDateShort(d) {
+  if (!d) return '';
+  const today = centralNow().date;
+  if (d === today) return 'Today';
+  const dt = new Date(d + 'T12:00:00');
+  return isNaN(dt) ? d : dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+function magnetIconHtml(def) {
+  return def.icon ? `<span class="mi">${def.icon}</span>` : '';
+}
+function magnetSummary(m) {
+  const def = MAGNET_TYPES[m.type]; if (!def) return '';
+  const bits = [];
+  if (m.time) bits.push(fmtTime12(m.time));
+  if (m.date && m.date !== centralNow().date) bits.push(fmtDateShort(m.date));
+  if (m.location) bits.push(m.location);
+  return bits.join(' · ');
+}
+function magnetChipHtml(m, key, idx) {
+  const def = MAGNET_TYPES[m.type]; if (!def) return '';
+  const sub = magnetSummary(m);
+  const title = [def.label, sub, m.note].filter(Boolean).join(' — ');
+  return `<button type="button" class="magnet ${def.cls}" data-act="edit" data-key="${escapeHtml(key)}" data-idx="${idx}" title="${escapeHtml(title)}" aria-label="${escapeHtml(title)}. Edit">${magnetIconHtml(def)}<span>${escapeHtml(def.short || def.label)}</span>${sub ? `<span class="msub">${escapeHtml(sub)}</span>` : ''}</button>`;
+}
+function magnetRowHtml(key) {
+  const list = magnetStore[key] || [];
+  if (!list.length) return '';
+  return `<div class="magnet-row">${list.map((m, i) => magnetChipHtml(m, key, i)).join('')}</div>`;
+}
+function addMagnetBtnHtml(key, bed) {
+  return boardPin ? `<button type="button" class="add-magnet" data-act="add" data-key="${escapeHtml(key)}" aria-label="Add a magnet to ${escapeHtml(bed)}">+ Magnet</button>` : '';
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.display = 'block';
+  clearTimeout(toast._t); toast._t = setTimeout(() => { t.style.display = 'none'; }, 3500);
+}
+function setSync(text, isErr) {
+  const el = document.getElementById('tray-sync');
+  el.textContent = text; el.classList.toggle('err', !!isErr);
+}
+
+async function magnetApi(method, path, body) {
+  const res = await fetch(MAGNET_API + path, {
+    method, cache: 'no-store',
+    headers: Object.assign({ 'X-Board-Pin': boardPin }, body ? { 'Content-Type': 'application/json' } : {}),
+    body: body ? JSON.stringify(body) : undefined
+  });
+  if (res.status === 401) { const e = new Error('pin'); e.pin = true; throw e; }
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  return res.json();
+}
+function lockBoard() {
+  boardPin = '';
+  try { localStorage.removeItem(PIN_KEY); } catch (e) {}
+  renderTray(); if (clients.length) renderClients();
+}
+
+async function loadMagnets() {
+  if (!boardPin) return;
+  try {
+    const data = await magnetApi('GET', '/magnets');
+    setSync('Synced ' + new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }));
+    if (data.updatedAt !== magnetsUpdatedAt) {
+      magnetsUpdatedAt = data.updatedAt;
+      magnetStore = data.magnets || {};
+      if (clients.length) renderClients();
+    }
+  } catch (err) {
+    if (err.pin) { lockBoard(); toast('That board PIN no longer works. Please unlock again.'); }
+    else setSync('Can’t reach the magnet board — retrying', true);
+  }
+}
+
+async function saveMagnets(key, list) {
+  const before = magnetStore[key] ? magnetStore[key].slice() : [];
+  if (list.length) magnetStore[key] = list; else delete magnetStore[key];
+  renderClients();
+  try {
+    const data = await magnetApi('PUT', '/magnets/' + encodeURIComponent(key), { magnets: list });
+    magnetStore = data.magnets || {}; magnetsUpdatedAt = data.updatedAt;
+    setSync('Saved ' + new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }));
+    renderClients();
+  } catch (err) {
+    if (before.length) magnetStore[key] = before; else delete magnetStore[key];
+    renderClients();
+    if (err.pin) { lockBoard(); toast('Board PIN needed to change magnets.'); }
+    else toast('Couldn’t save that magnet. Check the connection and try again.');
+  }
+}
+
+function placeMagnet(key, type) {
+  const def = MAGNET_TYPES[type]; if (!def || !key) return;
+  const now = centralNow();
+  const list = (magnetStore[key] || []).slice();
+  const existing = list.findIndex(m => m.type === type);
+  if (existing !== -1) { openEditor(key, existing); return; } // one of each kind per patient
+  list.push({ type, placedAt: new Date().toISOString(), time: now.time, date: now.date });
+  saveMagnets(key, list);
+  refillTray(type);
+  if (def.location) openEditor(key, list.length - 1, true);
+}
+
+// A fresh magnet "drops" back into the tray after one is used, so it's clear there are always more.
+function refillTray(type) {
+  const b = document.querySelector('#tray-magnets .magnet[data-type="' + type + '"]');
+  if (!b) return;
+  b.classList.remove('refill'); void b.offsetWidth; b.classList.add('refill');
+  setTimeout(() => b.classList.remove('refill'), 450);
+}
+
+function bedForKey(key) { return key.split('|')[0] || ''; }
+
+function openEditor(key, idx, isNew) {
+  const m = (magnetStore[key] || [])[idx]; if (!m) return;
+  const def = MAGNET_TYPES[m.type];
+  editing = { key, idx };
+  document.getElementById('md-icon').innerHTML = `<span class="magnet ${def.cls}" style="min-height:36px;padding:0 6px;">${magnetIconHtml(def)}</span>`;
+  document.getElementById('md-title').textContent = isNew && def.location ? 'Patient left the unit' : def.label;
+  document.getElementById('md-sub').textContent = 'Bed ' + bedForKey(key);
+  document.getElementById('md-time').value = m.time || '';
+  document.getElementById('md-date').value = m.date || centralNow().date;
+  document.getElementById('md-location').value = m.location || '';
+  document.getElementById('md-note').value = m.note || '';
+  document.getElementById('md-location-wrap').style.display = def.location ? '' : 'none';
+  const dlg = document.getElementById('magnet-dialog');
+  dlg.showModal();
+  (def.location && !m.location ? document.getElementById('md-location') : document.getElementById('md-time')).focus();
+}
+
+function openPicker(key) {
+  const grid = document.getElementById('picker-grid');
+  grid.innerHTML = MAGNET_ORDER.map(t => {
+    const d = MAGNET_TYPES[t];
+    return `<button type="button" class="magnet ${d.cls}" data-pick="${t}">${magnetIconHtml(d)}<span>${escapeHtml(d.label)}</span></button>`;
+  }).join('');
+  grid.dataset.key = key;
+  document.getElementById('pk-sub').textContent = 'Bed ' + bedForKey(key);
+  document.getElementById('picker-dialog').showModal();
+}
+
+function setArmed(type) {
+  armedType = armedType === type ? null : type;
+  document.body.classList.toggle('placing', !!armedType);
+  document.querySelectorAll('#tray-magnets .magnet').forEach(b => {
+    const on = b.dataset.type === armedType;
+    b.classList.toggle('armed', on);
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
+  document.getElementById('tray-hint').textContent = armedType
+    ? 'Now tap a patient to place “' + MAGNET_TYPES[armedType].label + '”. Press Esc to cancel.'
+    : 'Drag a magnet onto a patient, or tap a magnet and then tap the patient. The tray never runs out.';
+}
+
+function renderTray() {
+  const wrap = document.getElementById('tray-magnets');
+  const unlock = document.getElementById('unlock-btn');
+  if (!boardPin) {
+    wrap.innerHTML = '';
+    unlock.style.display = '';
+    document.getElementById('tray-hint').textContent = 'Unlock once on this device to place and see magnets.';
+    setSync('');
+    return;
+  }
+  unlock.style.display = 'none';
+  wrap.innerHTML = MAGNET_ORDER.map(t => {
+    const d = MAGNET_TYPES[t];
+    return `<button type="button" class="magnet ${d.cls}" draggable="true" data-type="${t}" aria-pressed="false" title="${escapeHtml(d.label)}">${magnetIconHtml(d)}<span>${escapeHtml(d.short || d.label)}</span></button>`;
+  }).join('');
+  setArmed(null);
+}
+
+function initMagnetBoard() {
+  renderTray();
+
+  document.getElementById('tray-magnets').addEventListener('click', e => {
+    const b = e.target.closest('.magnet'); if (b) setArmed(b.dataset.type);
+  });
+  document.getElementById('tray-magnets').addEventListener('dragstart', e => {
+    const b = e.target.closest('.magnet'); if (!b) return;
+    e.dataTransfer.setData('text/plain', 'magnet:' + b.dataset.type);
+    e.dataTransfer.effectAllowed = 'copy';
+  });
+
+  const board = document.querySelector('.board-columns');
+  board.addEventListener('click', e => {
+    const actEl = e.target.closest('[data-act]');
+    if (actEl && actEl.dataset.act === 'edit') { openEditor(actEl.dataset.key, parseInt(actEl.dataset.idx, 10)); return; }
+    if (actEl && actEl.dataset.act === 'add') { openPicker(actEl.dataset.key); return; }
+    if (armedType) {
+      const card = e.target.closest('.client-card[data-key]');
+      if (card) { const t = armedType; setArmed(null); placeMagnet(card.dataset.key, t); }
+    }
+  });
+  board.addEventListener('dragover', e => {
+    const card = e.target.closest('.client-card[data-key]'); if (!card) return;
+    e.preventDefault(); e.dataTransfer.dropEffect = 'copy';
+    document.querySelectorAll('.drop-over').forEach(x => x !== card && x.classList.remove('drop-over'));
+    card.classList.add('drop-over');
+  });
+  board.addEventListener('dragleave', e => {
+    const card = e.target.closest('.client-card'); if (card && !card.contains(e.relatedTarget)) card.classList.remove('drop-over');
+  });
+  board.addEventListener('drop', e => {
+    const card = e.target.closest('.client-card[data-key]'); if (!card) return;
+    e.preventDefault(); card.classList.remove('drop-over');
+    const data = e.dataTransfer.getData('text/plain') || '';
+    if (data.indexOf('magnet:') === 0) placeMagnet(card.dataset.key, data.slice(7));
+  });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && armedType) setArmed(null); });
+
+  // Magnet details form
+  const dlg = document.getElementById('magnet-dialog');
+  document.getElementById('magnet-form').addEventListener('submit', e => {
+    e.preventDefault();
+    if (!editing) return dlg.close();
+    const list = (magnetStore[editing.key] || []).slice();
+    const m = Object.assign({}, list[editing.idx]);
+    m.time = document.getElementById('md-time').value;
+    m.date = document.getElementById('md-date').value;
+    m.location = document.getElementById('md-location').value.trim();
+    m.note = document.getElementById('md-note').value.trim();
+    list[editing.idx] = m;
+    const key = editing.key; editing = null; dlg.close();
+    saveMagnets(key, list);
+  });
+  document.getElementById('md-remove').addEventListener('click', () => {
+    if (!editing) return dlg.close();
+    const list = (magnetStore[editing.key] || []).slice();
+    list.splice(editing.idx, 1);
+    const key = editing.key; editing = null; dlg.close();
+    saveMagnets(key, list);
+  });
+  document.getElementById('md-cancel').addEventListener('click', () => { editing = null; dlg.close(); });
+
+  // Picker
+  const pk = document.getElementById('picker-dialog');
+  document.getElementById('picker-grid').addEventListener('click', e => {
+    const b = e.target.closest('[data-pick]'); if (!b) return;
+    const key = document.getElementById('picker-grid').dataset.key;
+    pk.close(); placeMagnet(key, b.dataset.pick);
+  });
+  document.getElementById('pk-cancel').addEventListener('click', () => pk.close());
+
+  // PIN unlock
+  const pinDlg = document.getElementById('pin-dialog');
+  document.getElementById('unlock-btn').addEventListener('click', () => {
+    document.getElementById('pin-error').textContent = '';
+    document.getElementById('pin-input').value = '';
+    pinDlg.showModal(); document.getElementById('pin-input').focus();
+  });
+  document.getElementById('pin-cancel').addEventListener('click', () => pinDlg.close());
+  document.getElementById('pin-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const tryPin = document.getElementById('pin-input').value.trim();
+    if (!tryPin) return;
+    const prev = boardPin; boardPin = tryPin;
+    try {
+      const data = await magnetApi('GET', '/magnets');
+      try { localStorage.setItem(PIN_KEY, tryPin); } catch (err) {}
+      magnetStore = data.magnets || {}; magnetsUpdatedAt = data.updatedAt;
+      pinDlg.close(); renderTray(); if (clients.length) renderClients();
+      setSync('Synced');
+    } catch (err) {
+      boardPin = prev;
+      document.getElementById('pin-error').textContent = err.pin ? 'That PIN didn’t work. Try again.' : 'Can’t reach the magnet board right now.';
+    }
+  });
+
+  loadMagnets();
+  setInterval(() => { if (!document.hidden) loadMagnets(); }, MAGNET_POLL_MS);
+}
+initMagnetBoard();
 
 fetchData();
 </script>
