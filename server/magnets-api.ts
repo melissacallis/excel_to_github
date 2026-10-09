@@ -5,12 +5,16 @@
 // Data lives in one JSON file on a Railway volume mounted at /data.
 //
 // GET  /magnets          -> { magnets: { [patientKey]: Magnet[] }, updatedAt }
-// PUT  /magnets/:key     -> body { magnets: Magnet[] }  (replaces that patient's magnets)
+// PUT  /magnets/:key     -> body { magnets: Magnet[], patient?: { initials } }  (replaces that patient's magnets)
+// GET  /log?from=YYYY-MM-DD&to=YYYY-MM-DD -> { events: LogEvent[] }  (newest first)
+//
+// Every change is also appended to /data/log.jsonl: one line per magnet placed, edited or removed.
 // GET  /health           -> "ok"
 // Every /magnets call needs header  X-Board-Pin: <BOARD_PIN>
 
 const DATA_DIR = Bun.env.DATA_DIR || "/data";
 const FILE = `${DATA_DIR}/magnets.json`;
+const LOG_FILE = `${DATA_DIR}/log.jsonl`;
 const PIN = Bun.env.BOARD_PIN || "";
 const ALLOWED_ORIGINS = (Bun.env.ALLOWED_ORIGINS || "https://melissacallis.github.io")
   .split(",").map(s => s.trim()).filter(Boolean);
@@ -42,6 +46,51 @@ function withLock<T>(fn: () => Promise<T>): Promise<T> {
   const next = queue.then(fn, fn);
   queue = next.catch(() => {});
   return next;
+}
+
+type LogEvent = {
+  at: string;            // when the change was made (ISO)
+  action: "placed" | "updated" | "removed";
+  key: string; bed: string; memberId: string; initials?: string;
+  type: string;
+  time?: string; date?: string; location?: string; note?: string;
+  placedAt?: string;
+};
+
+async function appendLog(events: LogEvent[]) {
+  if (!events.length) return;
+  const f = Bun.file(LOG_FILE);
+  const prev = (await f.exists()) ? await f.text() : "";
+  await Bun.write(LOG_FILE, prev + events.map(e => JSON.stringify(e)).join("\n") + "\n");
+}
+
+async function readLog(): Promise<LogEvent[]> {
+  const f = Bun.file(LOG_FILE);
+  if (!(await f.exists())) return [];
+  const out: LogEvent[] = [];
+  for (const line of (await f.text()).split("\n")) {
+    if (!line.trim()) continue;
+    try { out.push(JSON.parse(line)); } catch {}
+  }
+  return out;
+}
+
+const SAME_FIELDS = ["time", "date", "location", "note"] as const;
+function diff(key: string, before: Magnet[], after: Magnet[], initials?: string): LogEvent[] {
+  const [bed, memberId = ""] = key.split("|");
+  const at = new Date().toISOString();
+  const base = { at, key, bed, memberId, initials };
+  const events: LogEvent[] = [];
+  const pick = (m: Magnet) => ({ type: m.type, time: m.time, date: m.date, location: m.location, note: m.note, placedAt: m.placedAt });
+  for (const m of after) {
+    const old = before.find(b => b.type === m.type);
+    if (!old) events.push({ ...base, action: "placed", ...pick(m) });
+    else if (SAME_FIELDS.some(k => (old[k] || "") !== (m[k] || ""))) events.push({ ...base, action: "updated", ...pick(m) });
+  }
+  for (const m of before) {
+    if (!after.find(a => a.type === m.type)) events.push({ ...base, action: "removed", ...pick(m) });
+  }
+  return events;
 }
 
 const TYPES = new Set(["offunit", "reassess", "pw", "full", "prn", "iop"]);
@@ -92,6 +141,20 @@ Bun.serve({
     if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: cors(req) });
     if (url.pathname === "/health") return new Response("ok", { headers: cors(req) });
 
+    if (url.pathname === "/log") {
+      if (!PIN || req.headers.get("X-Board-Pin") !== PIN) {
+        return json(req, { error: "Wrong or missing board PIN" }, 401);
+      }
+      const from = url.searchParams.get("from") || "";
+      const to = url.searchParams.get("to") || "";
+      // Filter by the day the change happened, in Central time (the unit's clock).
+      const day = (iso: string) => new Date(iso).toLocaleDateString("en-CA", { timeZone: "America/Chicago" });
+      const events = (await readLog())
+        .filter(e => (!from || day(e.at) >= from) && (!to || day(e.at) <= to))
+        .reverse();
+      return json(req, { events });
+    }
+
     if (url.pathname === "/magnets" || url.pathname.startsWith("/magnets/")) {
       if (!PIN || req.headers.get("X-Board-Pin") !== PIN) {
         return json(req, { error: "Wrong or missing board PIN" }, 401);
@@ -107,11 +170,14 @@ Bun.serve({
         let body: any;
         try { body = await req.json(); } catch { return json(req, { error: "Bad JSON" }, 400); }
         const list = clean(body?.magnets);
+        const initials = str(body?.patient?.initials, 20);
         const saved = await withLock(async () => {
           const store = await load();
+          const before = store.magnets[key] || [];
           if (list.length) store.magnets[key] = list; else delete store.magnets[key];
           store.updatedAt = new Date().toISOString();
           await Bun.write(FILE, JSON.stringify(store));
+          await appendLog(diff(key, before, list, initials));
           return store;
         });
         return json(req, saved);

@@ -329,15 +329,47 @@
   .magnet .msub { font-weight: 500; opacity: .9; }
   .magnet.armed { outline: 3px solid var(--teal-deep); outline-offset: 2px; }
   .magnet[draggable="true"] { cursor: grab; }
-  /* Tray magnets look like a stack: there's always another one underneath */
-  #tray-magnets .magnet {
-    box-shadow:
-      0 2px 0 rgba(0,0,0,0.12),
-      3px 4px 0 -1px rgba(255,255,255,0.9), 3px 4px 0 0 rgba(0,0,0,0.10),
-      6px 8px 0 -2px rgba(255,255,255,0.9), 6px 8px 0 -1px rgba(0,0,0,0.08),
-      0 6px 14px rgba(16,26,56,0.12);
-    margin: 0 6px 8px 0;
+  /* ---- Symbol magnets ("coins") ---- */
+  .coin {
+    width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-family: "Sora", "IBM Plex Sans", sans-serif; font-weight: 700; font-size: 14px; letter-spacing: -0.3px; line-height: 1;
+    border: 1px solid rgba(0,0,0,0.08);
+    box-shadow: inset 0 2px 0 rgba(255,255,255,0.55), 0 2px 0 rgba(0,0,0,0.14), 0 4px 10px rgba(16,26,56,0.14);
   }
+  .coin.coin-sm { font-size: 11.5px; letter-spacing: -0.2px; }
+  .coin svg { width: 24px; height: 24px; }
+  .rcheck { position: relative; font-size: 19px; font-weight: 800; padding-right: 3px; }
+  .rcheck svg { position: absolute; right: -9px; bottom: -4px; width: 15px; height: 15px; color: #1d7a2d;
+    background: #fff; border-radius: 50%; padding: 1px; box-shadow: 0 0 0 1.5px currentColor; }
+  .coin-btn { padding: 0; border: 0; background: transparent; border-radius: 50%; cursor: pointer; line-height: 0; }
+  .coin-btn:active .coin { transform: translateY(1px); }
+
+  /* Tray: neutral buttons holding a stacked coin + a small caption; there's always another underneath */
+  #tray-magnets .magnet {
+    flex-direction: column; gap: 4px; padding: 2px 6px 0; min-height: 0; border: 0; border-radius: 10px;
+    background: transparent; box-shadow: none; color: var(--slate); font-size: 11px; font-weight: 600;
+  }
+  #tray-magnets .coin {
+    width: 44px; height: 44px;
+    box-shadow:
+      inset 0 2px 0 rgba(255,255,255,0.55), 0 2px 0 rgba(0,0,0,0.14),
+      2px 4px 0 -1px #ffffff, 2px 4px 0 0 rgba(0,0,0,0.12),
+      4px 8px 0 -2px #ffffff, 4px 8px 0 -1px rgba(0,0,0,0.10),
+      0 8px 14px rgba(16,26,56,0.12);
+    margin-bottom: 6px;
+  }
+  #tray-magnets .magnet.armed { outline: none; }
+  #tray-magnets .magnet.armed .coin { outline: 3px solid var(--teal-deep); outline-offset: 3px; }
+  .cap { white-space: nowrap; }
+  .tray-log {
+    display: inline-flex; align-items: center; min-height: 44px; padding: 0 14px; border-radius: 10px;
+    border: 1px solid #b9c6c2; color: var(--teal-deep); font-size: 13px; font-weight: 600; text-decoration: none;
+  }
+  .tray-log:hover { background: var(--teal-light); }
+  .pick-btn { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 56px; padding: 6px 10px;
+    border: 1px solid var(--line); border-radius: 12px; background: #fff; font: inherit; font-size: 14px; font-weight: 600; color: var(--ink); cursor: pointer; text-align: left; }
+  .pick-btn:hover { background: var(--teal-light); }
   @keyframes magnet-refill { 0% { transform: translateY(-10px) scale(.85); opacity: 0; } 70% { transform: translateY(1px) scale(1.04); opacity: 1; } 100% { transform: none; } }
   #tray-magnets .magnet.refill { animation: magnet-refill .38s ease-out; }
   @media (prefers-reduced-motion: reduce) { #tray-magnets .magnet.refill { animation: none; } }
@@ -349,7 +381,12 @@
   .m-prn      { background: #fde9a6; color: #5e4500; }
   .m-iop      { background: #dfe3fb; color: #2b3a8a; }
 
-  .magnet-row { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 2px 0 6px; }
+  .magnet-stack { display: flex; flex-direction: column; align-items: center; gap: 6px; margin-top: 8px; }
+  .magnet-stack .coin { width: 36px; height: 36px; }
+  .magnet-stack .coin svg { width: 22px; height: 22px; }
+  .magnet-stack .coin.coin-sm { font-size: 10.5px; }
+  .magnet-stack .rcheck { font-size: 17px; }
+  .coin .rcheck svg, .magnet-stack .coin .rcheck svg { width: 14px; height: 14px; right: -8px; bottom: -4px; }
   .magnet-row .magnet { min-height: 36px; font-size: 12.5px; }
   .magnet-row .magnet .mi { width: 24px; height: 24px; }
   .status-row .add-magnet { margin-left: 8px; }
@@ -395,6 +432,7 @@
     .legend { margin-left: 0; }
     .tray-hint { margin-left: 0; width: 100%; }
     .magnet-tray { position: static; }
+    .magnet-stack { flex-direction: row; flex-wrap: wrap; justify-content: center; }
     .picker-grid { grid-template-columns: 1fr; }
     header { padding: 20px 16px 62px; grid-template-columns: 1fr; }
     header .clock { grid-column: 1; grid-row: 2; justify-self: start; align-items: flex-start; text-align: left; }
@@ -485,6 +523,7 @@
       <button type="button" class="btn btn-ghost" id="unlock-btn" style="display:none;">Unlock magnets</button>
       <span class="tray-hint" id="tray-hint">Drag a magnet onto a patient, or tap a magnet and then tap the patient.</span>
       <span class="tray-sync" id="tray-sync" aria-live="polite"></span>
+      <a class="tray-log" href="log.html">Magnet log</a>
     </div>
 
     <div class="board-columns">
@@ -778,9 +817,9 @@ function buildCardHtml(c, ev) {
       ${referralHtml ? `<span class="status-ref">Referred by ${referralHtml}</span>` : ''}
       ${addMagnetBtnHtml(pKey, c['Bed'] || '')}
     </div>
-    ${magnetRowHtml(pKey)}
     <div class="avatar-col">
       <div class="avatar ${gender}">${initials(c['Client Initials'])}</div>
+      ${magnetRowHtml(pKey)}
     </div>
     <div class="cell">
       <div class="field-label">Patient</div>
@@ -1017,14 +1056,18 @@ const ICONS = {
   check: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" d="m5 12.5 4.5 4.5L19 7.5"/></svg>',
   pill: '<svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2"><rect x="3.5" y="8.5" width="17" height="7" rx="3.5" transform="rotate(-35 12 12)"/><path d="m10.2 8.6 4.6 6.6" /></g></svg>'
 };
+const R_CHECK = '<span class="rcheck">R<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" d="m4 12.5 5 5L20 6.5"/></svg></span>';
 const MAGNET_TYPES = {
-  offunit:  { label: 'Off unit',               cls: 'm-offunit',  icon: ICONS.bird,  location: true },
-  reassess: { label: 'Reassessments complete', short: 'Reassess done', cls: 'm-reassess', icon: ICONS.check },
-  pw:       { label: 'PW',                     cls: 'm-pw',       text: 'PW' },
-  full:     { label: 'Full',                   cls: 'm-full',     text: 'F' },
-  prn:      { label: 'PRN',                    cls: 'm-prn',      icon: ICONS.pill },
-  iop:      { label: 'IOP',                    cls: 'm-iop',      text: 'IOP' }
+  offunit:  { label: 'Off unit',               short: 'Off unit',  cls: 'm-offunit',  sym: ICONS.bird, location: true },
+  reassess: { label: 'Reassessments complete', short: 'Reassess',  cls: 'm-reassess', sym: R_CHECK },
+  pw:       { label: 'PW',                     short: 'PW',        cls: 'm-pw',       sym: 'PW' },
+  full:     { label: 'Full',                   short: 'Full',      cls: 'm-full',     sym: 'Full', small: true },
+  prn:      { label: 'PRN',                    short: 'PRN',       cls: 'm-prn',      sym: 'PRN', small: true },
+  iop:      { label: 'IOP',                    short: 'IOP',       cls: 'm-iop',      sym: 'IOP', small: true }
 };
+function coinHtml(def) {
+  return `<span class="coin ${def.cls}${def.small ? ' coin-sm' : ''}" aria-hidden="true">${def.sym}</span>`;
+}
 const MAGNET_ORDER = ['offunit', 'reassess', 'pw', 'full', 'prn', 'iop'];
 
 let magnetStore = {};
@@ -1059,9 +1102,6 @@ function fmtDateShort(d) {
   const dt = new Date(d + 'T12:00:00');
   return isNaN(dt) ? d : dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
-function magnetIconHtml(def) {
-  return def.icon ? `<span class="mi">${def.icon}</span>` : '';
-}
 function magnetSummary(m) {
   const def = MAGNET_TYPES[m.type]; if (!def) return '';
   const bits = [];
@@ -1074,12 +1114,12 @@ function magnetChipHtml(m, key, idx) {
   const def = MAGNET_TYPES[m.type]; if (!def) return '';
   const sub = magnetSummary(m);
   const title = [def.label, sub, m.note].filter(Boolean).join(' — ');
-  return `<button type="button" class="magnet ${def.cls}" data-act="edit" data-key="${escapeHtml(key)}" data-idx="${idx}" title="${escapeHtml(title)}" aria-label="${escapeHtml(title)}. Edit">${magnetIconHtml(def)}<span>${escapeHtml(def.short || def.label)}</span>${sub ? `<span class="msub">${escapeHtml(sub)}</span>` : ''}</button>`;
+  return `<button type="button" class="coin-btn" data-act="edit" data-key="${escapeHtml(key)}" data-idx="${idx}" title="${escapeHtml(title)}" aria-label="${escapeHtml(title)}. Edit">${coinHtml(def)}</button>`;
 }
 function magnetRowHtml(key) {
   const list = magnetStore[key] || [];
   if (!list.length) return '';
-  return `<div class="magnet-row">${list.map((m, i) => magnetChipHtml(m, key, i)).join('')}</div>`;
+  return `<div class="magnet-stack" aria-label="Magnets">${list.map((m, i) => magnetChipHtml(m, key, i)).join('')}</div>`;
 }
 function addMagnetBtnHtml(key, bed) {
   return boardPin ? `<button type="button" class="add-magnet" data-act="add" data-key="${escapeHtml(key)}" aria-label="Add a magnet to ${escapeHtml(bed)}">+ Magnet</button>` : '';
@@ -1132,7 +1172,7 @@ async function saveMagnets(key, list) {
   if (list.length) magnetStore[key] = list; else delete magnetStore[key];
   renderClients();
   try {
-    const data = await magnetApi('PUT', '/magnets/' + encodeURIComponent(key), { magnets: list });
+    const data = await magnetApi('PUT', '/magnets/' + encodeURIComponent(key), { magnets: list, patient: { initials: initialsForKey(key) } });
     magnetStore = data.magnets || {}; magnetsUpdatedAt = data.updatedAt;
     setSync('Saved ' + new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }));
     renderClients();
@@ -1164,13 +1204,18 @@ function refillTray(type) {
   setTimeout(() => b.classList.remove('refill'), 450);
 }
 
+function initialsForKey(key) {
+  const c = clients.find(x => patientKey(x) === key);
+  return c ? String(c['Client Initials'] || '').trim() : '';
+}
+
 function bedForKey(key) { return key.split('|')[0] || ''; }
 
 function openEditor(key, idx, isNew) {
   const m = (magnetStore[key] || [])[idx]; if (!m) return;
   const def = MAGNET_TYPES[m.type];
   editing = { key, idx };
-  document.getElementById('md-icon').innerHTML = `<span class="magnet ${def.cls}" style="min-height:36px;padding:0 6px;">${magnetIconHtml(def)}</span>`;
+  document.getElementById('md-icon').innerHTML = coinHtml(def);
   document.getElementById('md-title').textContent = isNew && def.location ? 'Patient left the unit' : def.label;
   document.getElementById('md-sub').textContent = 'Bed ' + bedForKey(key);
   document.getElementById('md-time').value = m.time || '';
@@ -1187,7 +1232,7 @@ function openPicker(key) {
   const grid = document.getElementById('picker-grid');
   grid.innerHTML = MAGNET_ORDER.map(t => {
     const d = MAGNET_TYPES[t];
-    return `<button type="button" class="magnet ${d.cls}" data-pick="${t}">${magnetIconHtml(d)}<span>${escapeHtml(d.label)}</span></button>`;
+    return `<button type="button" class="pick-btn" data-pick="${t}">${coinHtml(d)}<span>${escapeHtml(d.label)}</span></button>`;
   }).join('');
   grid.dataset.key = key;
   document.getElementById('pk-sub').textContent = 'Bed ' + bedForKey(key);
@@ -1220,7 +1265,7 @@ function renderTray() {
   unlock.style.display = 'none';
   wrap.innerHTML = MAGNET_ORDER.map(t => {
     const d = MAGNET_TYPES[t];
-    return `<button type="button" class="magnet ${d.cls}" draggable="true" data-type="${t}" aria-pressed="false" title="${escapeHtml(d.label)}">${magnetIconHtml(d)}<span>${escapeHtml(d.short || d.label)}</span></button>`;
+    return `<button type="button" class="magnet" draggable="true" data-type="${t}" aria-pressed="false" title="${escapeHtml(d.label)}">${coinHtml(d)}<span class="cap">${escapeHtml(d.short)}</span></button>`;
   }).join('');
   setArmed(null);
 }
