@@ -285,7 +285,37 @@
     overflow: hidden; text-overflow: ellipsis; vertical-align: middle;
   }
 
-  .med-banner { display: flex; align-items: center; gap: 8px; font-size: 12px; padding: 7px 12px; margin: 0; border-radius: 7px; }
+  .med-banner {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    font-size: 12.5px; padding: 8px 10px; margin: 0; border-radius: 10px;
+    background: #f5f7fb; border: 1px solid #e3e8f2;
+  }
+  .med-banner.is-due { background: #fff7e8; border-color: #f3c77a; }
+  .med-label { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; color: var(--slate); white-space: nowrap; }
+  .med-banner.is-due .med-label { color: #8a4b00; }
+  .med-blocks { display: flex; flex-wrap: wrap; gap: 6px; }
+  .med-none { color: var(--muted); font-style: italic; }
+  .med-time {
+    display: inline-flex; align-items: center; gap: 5px; padding: 4px 9px; border-radius: 7px;
+    font-family: "IBM Plex Mono", monospace; font-size: 12px; font-weight: 600; white-space: nowrap;
+    border: 1px solid rgba(0,0,0,0.06);
+  }
+  .med-time b { font-family: "IBM Plex Sans", sans-serif; font-size: 10px; letter-spacing: .5px; padding: 1px 5px; border-radius: 4px; background: rgba(0,0,0,0.12); }
+  .med-time.due { outline: 2.5px solid currentColor; outline-offset: 1px; }
+  .t-8a  { background: #fff1c2; color: #6b4e00; }
+  .t-12p { background: #ffdcb8; color: #7a3d00; }
+  .t-2p  { background: #ffd3d9; color: #7a1f2e; }
+  .t-4p  { background: #d3eed5; color: #1d5124; }
+  .t-6p  { background: #ddd8f8; color: #3b2a8a; }
+  .t-8p  { background: #cfdaf2; color: #16234a; }
+  .t-other { background: #eceff3; color: #3a4a47; }
+  .med-conditions { display: inline-flex; gap: 6px; margin-left: auto; }
+  .med-conditions .coin { width: 30px; height: 30px; box-shadow: inset 0 1px 0 rgba(255,255,255,.6), 0 1px 0 rgba(0,0,0,.12); }
+  .med-conditions .coin svg { width: 17px; height: 17px; }
+  .m-med { background: #e9edf5; color: #44506b; }
+  .tray-divider { width: 1px; align-self: stretch; background: var(--line); margin: 0 4px; }
+  .tray-group { font-size: 11px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; color: var(--muted); writing-mode: vertical-rl; transform: rotate(180deg); }
+  .pick-head { grid-column: 1 / -1; font-size: 11.5px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; color: var(--muted); margin-top: 4px; }
 
   .bed-days-square {
     display: inline-flex; flex-direction: column; align-items: center; justify-content: center;
@@ -548,12 +578,12 @@
     <div class="dlg-head"><span id="md-icon"></span><h3 id="md-title">Magnet</h3></div>
     <div class="dlg-sub" id="md-sub"></div>
     <div class="dlg-body">
-      <div class="dlg-row">
+      <div class="dlg-row" id="md-when">
         <label>Time<input type="time" id="md-time"></label>
         <label>Date<input type="date" id="md-date"></label>
       </div>
       <label id="md-location-wrap">Where did they go?<input type="text" id="md-location" maxlength="120" placeholder="e.g. Clinic, court, pass with family"></label>
-      <label>Note<input type="text" id="md-note" maxlength="240" placeholder="Optional"></label>
+      <label id="md-note-label">Note<input type="text" id="md-note" maxlength="240" placeholder="Optional"></label>
     </div>
     <div class="dlg-foot">
       <button type="button" class="btn btn-danger" id="md-remove">Remove magnet</button>
@@ -686,6 +716,22 @@ function cleanMedTimes(raw) {
   return times.map(x => x.label).join(', ');
 }
 
+// Each med time gets its own colored block. The six standard pass times have fixed colors;
+// any other time gets a neutral block. The block that's due now is outlined and marked.
+const MED_TIME_COLORS = { 480: 't-8a', 720: 't-12p', 840: 't-2p', 960: 't-4p', 1080: 't-6p', 1200: 't-8p' };
+function medTimeBlocksHtml(raw) {
+  const mins = Array.from(new Set(parseMedTimesToMinutes(raw))).sort((a, b) => a - b);
+  const central = nowInCentral();
+  const nowMin = central.getHours() * 60 + central.getMinutes();
+  return mins.map(t => {
+    let diff = Math.abs(t - nowMin); diff = Math.min(diff, 1440 - diff);
+    const due = diff <= MED_WINDOW_MIN;
+    const h = Math.floor(t / 60), m = t % 60, ap = h >= 12 ? 'PM' : 'AM', h12 = h % 12 || 12;
+    const label = h12 + (m ? ':' + String(m).padStart(2, '0') : '') + ' ' + ap;
+    return `<span class="med-time ${MED_TIME_COLORS[t] || 't-other'}${due ? ' due' : ''}"${due ? ' aria-label="' + label + ', due now"' : ''}>${label}${due ? '<b>NOW</b>' : ''}</span>`;
+  }).join('');
+}
+
 function nowInCentral() {
   const str = new Date().toLocaleString('en-US', { timeZone: 'America/Chicago' });
   return new Date(str);
@@ -797,11 +843,15 @@ function buildCardHtml(c, ev) {
   const pharmStatusHtml = pharmStatus ? `<span class="status-chip ${pharmStatusClass(pharmStatus)}">${breakAtSlash(pharmStatus)}</span>` : '';
 
   const clockIcon = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="M5 3 2 6"/><path d="m22 6-3-3"/><path d="M6.38 18.7 4 21"/><path d="M17.64 18.67 20 21"/></svg>';
+  const medCoins = medicalCoinsHtml(pKey);
   let medTimesHtml = '';
-  if (medTimes && mStatus === 'due') {
-    medTimesHtml = `<div class="alert alert-success med-banner">${clockIcon}<span><strong>MEDS DUE NOW</strong> \u2014 ${medTimes}</span></div>`;
-  } else if (medTimes) {
-    medTimesHtml = `<div class="alert alert-info med-banner">${clockIcon}<span><strong>Med Times:</strong> ${medTimes}</span></div>`;
+  if (medTimes || medCoins) {
+    const blocks = medTimeBlocksHtml(rawMedTimes);
+    medTimesHtml = `<div class="med-banner${mStatus === 'due' ? ' is-due' : ''}">
+      <span class="med-label">${clockIcon}<span>${mStatus === 'due' ? 'Meds due now' : 'Meds'}</span></span>
+      <span class="med-blocks">${blocks || '<span class="med-none">No med times</span>'}</span>
+      ${medCoins ? `<span class="med-conditions" aria-label="Medical">${medCoins}</span>` : ''}
+    </div>`;
   }
 
   const referral = (c['Referral source'] || '').trim();
@@ -1068,7 +1118,29 @@ const MAGNET_TYPES = {
 function coinHtml(def) {
   return `<span class="coin ${def.cls}${def.small ? ' coin-sm' : ''}" aria-hidden="true">${def.sym}</span>`;
 }
-const MAGNET_ORDER = ['offunit', 'reassess', 'pw', 'full', 'prn', 'iop'];
+// Medical magnets: quiet, muted symbols staff recognise; the name only shows on hover/click.
+const MED_ICONS = {
+  htn: '<svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7.5-4.6-9.2-9.3C1.6 7.2 3.9 4.5 7 4.5c2 0 3.6 1.2 5 3 1.4-1.8 3-3 5-3 3.1 0 5.4 2.7 4.2 6.2C19.5 15.4 12 20 12 20z"/><path d="M5.5 12h3l1.5-2.5 2 5 1.5-2.5h5"/></g></svg>',
+  hiv: '<svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 13.5C9.6 10.8 8.5 9 8.5 7.2 8.5 5.1 10 3.5 12 3.5s3.5 1.6 3.5 3.7c0 1.8-1.1 3.6-3.5 6.3z"/><path d="M10.2 10.9 6 20.5M13.8 10.9l4.2 9.6"/></g></svg>',
+  seizure: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M13.5 2.5 5 13.5h6l-1 8 8.5-11h-6z"/></svg>',
+  diabetes: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M12 3.5c3 4 6 7.3 6 10.8a6 6 0 0 1-12 0C6 10.8 9 7.5 12 3.5z"/></svg>',
+  medother: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M9.5 4h5v5.5H20v5h-5.5V20h-5v-5.5H4v-5h5.5z"/></svg>'
+};
+Object.assign(MAGNET_TYPES, {
+  htn:      { label: 'High blood pressure', short: 'BP',       cls: 'm-med', sym: MED_ICONS.htn,      medical: true },
+  hiv:      { label: 'HIV',                 short: 'HIV',      cls: 'm-med', sym: MED_ICONS.hiv,      medical: true },
+  seizure:  { label: 'Seizures',            short: 'Seizure',  cls: 'm-med', sym: MED_ICONS.seizure,  medical: true },
+  diabetes: { label: 'Diabetes',            short: 'Diabetes', cls: 'm-med', sym: MED_ICONS.diabetes, medical: true },
+  medother: { label: 'Other medical',       short: 'Other',    cls: 'm-med', sym: MED_ICONS.medother, medical: true, needsNote: true }
+});
+const STATUS_ORDER = ['offunit', 'reassess', 'pw', 'full', 'prn', 'iop'];
+const MEDICAL_ORDER = ['htn', 'hiv', 'seizure', 'diabetes', 'medother'];
+const MAGNET_ORDER = STATUS_ORDER.concat(MEDICAL_ORDER);
+const isMedical = m => !!(MAGNET_TYPES[m.type] || {}).medical;
+// Medical magnets for a patient, shown inside the medication banner.
+function medicalCoinsHtml(key) {
+  return (magnetStore[key] || []).map((m, i) => isMedical(m) ? magnetChipHtml(m, key, i) : '').join('');
+}
 
 let magnetStore = {};
 let magnetsUpdatedAt = '';
@@ -1112,14 +1184,15 @@ function magnetSummary(m) {
 }
 function magnetChipHtml(m, key, idx) {
   const def = MAGNET_TYPES[m.type]; if (!def) return '';
-  const sub = magnetSummary(m);
+  const sub = def.medical ? '' : magnetSummary(m);
   const title = [def.label, sub, m.note].filter(Boolean).join(' — ');
   return `<button type="button" class="coin-btn" data-act="edit" data-key="${escapeHtml(key)}" data-idx="${idx}" title="${escapeHtml(title)}" aria-label="${escapeHtml(title)}. Edit">${coinHtml(def)}</button>`;
 }
 function magnetRowHtml(key) {
   const list = magnetStore[key] || [];
-  if (!list.length) return '';
-  return `<div class="magnet-stack" aria-label="Magnets">${list.map((m, i) => magnetChipHtml(m, key, i)).join('')}</div>`;
+  const chips = list.map((m, i) => isMedical(m) ? '' : magnetChipHtml(m, key, i)).join('');
+  if (!chips) return '';
+  return `<div class="magnet-stack" aria-label="Magnets">${chips}</div>`;
 }
 function addMagnetBtnHtml(key, bed) {
   return boardPin ? `<button type="button" class="add-magnet" data-act="add" data-key="${escapeHtml(key)}" aria-label="Add a magnet to ${escapeHtml(bed)}">+ Magnet</button>` : '';
@@ -1193,7 +1266,7 @@ function placeMagnet(key, type) {
   list.push({ type, placedAt: new Date().toISOString(), time: now.time, date: now.date });
   saveMagnets(key, list);
   refillTray(type);
-  if (def.location) openEditor(key, list.length - 1, true);
+  if (def.location || def.needsNote) openEditor(key, list.length - 1, true);
 }
 
 // A fresh magnet "drops" back into the tray after one is used, so it's clear there are always more.
@@ -1223,17 +1296,19 @@ function openEditor(key, idx, isNew) {
   document.getElementById('md-location').value = m.location || '';
   document.getElementById('md-note').value = m.note || '';
   document.getElementById('md-location-wrap').style.display = def.location ? '' : 'none';
+  document.getElementById('md-when').style.display = def.medical ? 'none' : '';
+  document.getElementById('md-note-label').firstChild.textContent = def.medical ? (def.needsNote ? 'What condition?' : 'Details (optional)') : 'Note';
   const dlg = document.getElementById('magnet-dialog');
   dlg.showModal();
-  (def.location && !m.location ? document.getElementById('md-location') : document.getElementById('md-time')).focus();
+  const focusEl = def.medical ? 'md-note' : (def.location && !m.location ? 'md-location' : 'md-time');
+  document.getElementById(focusEl).focus();
 }
 
 function openPicker(key) {
   const grid = document.getElementById('picker-grid');
-  grid.innerHTML = MAGNET_ORDER.map(t => {
-    const d = MAGNET_TYPES[t];
-    return `<button type="button" class="pick-btn" data-pick="${t}">${coinHtml(d)}<span>${escapeHtml(d.label)}</span></button>`;
-  }).join('');
+  const btn = t => { const d = MAGNET_TYPES[t]; return `<button type="button" class="pick-btn" data-pick="${t}">${coinHtml(d)}<span>${escapeHtml(d.label)}</span></button>`; };
+  grid.innerHTML = '<div class="pick-head">Status</div>' + STATUS_ORDER.map(btn).join('') +
+                   '<div class="pick-head">Medical</div>' + MEDICAL_ORDER.map(btn).join('');
   grid.dataset.key = key;
   document.getElementById('pk-sub').textContent = 'Bed ' + bedForKey(key);
   document.getElementById('picker-dialog').showModal();
@@ -1263,10 +1338,8 @@ function renderTray() {
     return;
   }
   unlock.style.display = 'none';
-  wrap.innerHTML = MAGNET_ORDER.map(t => {
-    const d = MAGNET_TYPES[t];
-    return `<button type="button" class="magnet" draggable="true" data-type="${t}" aria-pressed="false" title="${escapeHtml(d.label)}">${coinHtml(d)}<span class="cap">${escapeHtml(d.short)}</span></button>`;
-  }).join('');
+  const btn = t => { const d = MAGNET_TYPES[t]; return `<button type="button" class="magnet" draggable="true" data-type="${t}" aria-pressed="false" title="${escapeHtml(d.label)}">${coinHtml(d)}<span class="cap">${escapeHtml(d.short)}</span></button>`; };
+  wrap.innerHTML = STATUS_ORDER.map(btn).join('') + '<span class="tray-divider" aria-hidden="true"></span><span class="tray-group">Medical</span>' + MEDICAL_ORDER.map(btn).join('');
   setArmed(null);
 }
 
